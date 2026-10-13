@@ -65,6 +65,7 @@ def delete_post(db: Session, payload: dict[str, Any]) -> None:
 @handler("scan_scheduled_posts")
 def scan_scheduled_posts(db: Session, payload: dict[str, Any]) -> None:
     publishing.release_due_scheduled_posts(db)
+    publishing.flag_stuck_publishing(db)
 
 
 @handler("repost_scan")
@@ -119,6 +120,12 @@ def crm_push(db: Session, payload: dict[str, Any]) -> None:
 @handler("cleanup")
 def cleanup(db: Session, payload: dict[str, Any]) -> None:
     purge_rate_limit_hits(db)
+    from ..config import get_settings
+    from ..services.leads import purge_expired_leads
+
+    purged = purge_expired_leads(db, get_settings().lead_retention_days)
+    if purged:
+        log_event(log, "leads_purged_by_retention_policy", inquiries=purged)
     from datetime import timedelta
 
     from sqlalchemy import delete

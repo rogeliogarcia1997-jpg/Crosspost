@@ -214,3 +214,38 @@ def submit_inquiry(
         enqueue(db, "crm_push", {"inquiry_id": inquiry.id}, idempotency_key=f"crm_push:{inquiry.id}")
     log_event(log, "lead_captured", lead_id=lead.id, inquiry_id=inquiry.id, listing_id=listing.id, platform=platform)
     return SubmissionResult("created", lead=lead, inquiry=inquiry)
+
+
+def erase_contact(db: Session, contact: Contact) -> int:
+    """Delete a buyer's personal data (privacy request): contact, leads, inquiries, CRM sync rows.
+
+    Returns the number of leads removed. Aggregate counts (page visits, clicks) contain no PII and remain.
+    """
+    leads = list(db.scalars(select(Lead).where(Lead.contact_id == contact.id)))
+    for lead in leads:
+        for inquiry in list(lead.inquiries):
+            db.delete(inquiry)
+        db.delete(lead)
+    db.flush()
+    db.delete(contact)
+    db.flush()
+    return len(leads)
+
+
+def purge_expired_leads(db: Session, retention_days: int, now: datetime | None = None) -> int:
+    """Remove inquiries older than the retention period, then leads and contacts left without any."""
+    if retention_days <= 0:
+        return 0
+    cutoff = (now or utcnow()) - timedelta(days=retention_days)
+    removed = 0
+    for inquiry in db.scalars(select(Inquiry).where(Inquiry.submitted_at < cutoff)):
+        db.delete(inquiry)
+        removed += 1
+    db.flush()
+    for lead in db.scalars(select(Lead).where(~Lead.inquiries.any())):
+        db.delete(lead)
+    db.flush()
+    for contact in db.scalars(select(Contact).where(~select(Lead.id).where(Lead.contact_id == Contact.id).exists())):
+        db.delete(contact)
+    db.flush()
+    return removed

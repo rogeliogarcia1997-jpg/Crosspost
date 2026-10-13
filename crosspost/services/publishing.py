@@ -435,3 +435,17 @@ def release_due_scheduled_posts(db: Session, now: datetime | None = None) -> int
             _enqueue_publish(db, post)
         count += 1
     return count
+
+
+def flag_stuck_publishing(db: Session, now: datetime | None = None) -> int:
+    """Posts left in ``publishing`` by a worker that died mid-request may or may not have
+    reached the platform. Never resend them automatically; hold them for verification."""
+    now = now or utcnow()
+    cutoff = now - timedelta(seconds=get_settings().job_lock_timeout_seconds)
+    count = 0
+    for post in db.scalars(select(Post).where(Post.status == "publishing", Post.updated_at < cutoff)):
+        post.status, post.error_category = "needs_verification", "uncertain"
+        post.last_error = ("The worker stopped while publishing. Check the platform before retrying "
+                           "to avoid a duplicate post.")
+        count += 1
+    return count

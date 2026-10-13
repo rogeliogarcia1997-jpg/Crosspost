@@ -1,6 +1,14 @@
 {% extends "admin_base.html" %}
 {% set l = lead %}
-{% block page_title %}Lead #{{ l.id }}{% endblock %}
+{% block page_title %}Lead #{{ l.id }}{% if user.role == 'admin' %}
+<section class="panel"><h2>Privacy request</h2>
+  <p class="muted"><small>Permanently deletes this buyer's contact details, every lead and inquiry for them across all listings, and CRM sync records in this application. Records already delivered to an external CRM or email must be deleted there separately.</small></p>
+  <form method="post" action="/admin/leads/{{ l.id }}/erase"><input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    <label for="confirm">Type ERASE to confirm</label><input id="confirm" type="text" name="confirm" autocomplete="off">
+    <p><button class="danger small">Erase buyer data</button></p></form>
+</section>
+{% endif %}
+{% endblock %}
 {% block content %}
 <p><a href="/admin/leads">← Leads</a></p>
 <div class="row spread"><h1>{{ l.contact.full_name }}</h1><span class="badge {{ l.status }}">{{ l.status }}</span></div>
@@ -35,4 +43,12 @@
     <p class="muted"><small>Preferred: {{ i.preferred_contact_method }}{% if i.utm_campaign %} · utm_campaign={{ i.utm_campaign }}{% endif %}{% if i.utm_content %} · utm_content={{ i.utm_content }}{% endif %}{% if i.referrer_url %} · referrer {{ i.referrer_url[:120] }}{% endif %} · consent text v{{ i.consent_text_version }}</small></p></div>
   {% endfor %}
 </section>
+{% if user.role == 'admin' %}
+<section class="panel"><h2>Privacy request</h2>
+  <p class="muted"><small>Permanently deletes this buyer's contact details, every lead and inquiry for them across all listings, and CRM sync records in this application. Records already delivered to an external CRM or email must be deleted there separately.</small></p>
+  <form method="post" action="/admin/leads/{{ l.id }}/erase"><input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    <label for="confirm">Type ERASE to confirm</label><input id="confirm" type="text" name="confirm" autocomplete="off">
+    <p><button class="danger small">Erase buyer data</button></p></form>
+</section>
+{% endif %}
 {% endblock %}

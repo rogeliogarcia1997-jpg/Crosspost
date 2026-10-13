@@ -78,7 +78,7 @@ tests/                 pytest suite (mock MLS + mocked HTTP; no live credentials
 - A unique constraint covers (campaign, account, kind, event key).
 - A post is atomically claimed (`queued → publishing`) before the API call.
 - Published posts are never re-sent.
-- An outcome that may have succeeded — a timeout after the request was sent — moves the post to `needs_verification` instead of retrying it.
+- An outcome that may have succeeded — a timeout after the request was sent, or a worker that died mid-request — moves the post to `needs_verification` instead of retrying it.
 - Each request carries an idempotency key, passed to adapters that support one.
 
 ## Quick start (development)
@@ -117,7 +117,7 @@ Useful commands:
 ## Running tests
 
 ```bash
-pytest                                   # 122 tests, SQLite
+pytest                                   # 125 tests, SQLite
 TEST_DATABASE_URL=postgresql+psycopg://user:pass@localhost/disposable_db pytest   # same suite on PostgreSQL (drops all tables)
 ```
 
@@ -135,7 +135,7 @@ The suite covers all nine acceptance tests in the brief:
 | 8 Account auth | `test_expired_token_blocks_without_repeated_retries`, `test_expired_token_detected_by_health_check`, `test_engine_expired_meta_token_blocks_account` |
 | 9 Security | `test_security.py` (access control, CSRF, validation, spam, rate limits, token encryption, log redaction, headers) |
 
-`test_mls_content.py::test_migrations_match_models` fails if the models and the Alembic migrations drift apart.
+`test_mls_content.py::test_migrations_match_models` fails if the models and the Alembic migrations drift apart. CI (`.github/workflows/tests.yml`) runs the suite on SQLite and PostgreSQL and checks the migrations on every push.
 
 ## Configuration
 
@@ -211,6 +211,8 @@ From a listing page, marketers can also generate posts for specific accounts.
   - CSV exports are protected against formula injection;
   - logs redact emails, tokens and other secrets.
 - **Attribution:** the click on `/t/<code>` redirects to the landing page with UTM parameters and the tracking code. A signed cookie keeps the attribution for 30 days, and every lead and inquiry records platform, campaign, tracking link, UTM values, referrer and timestamp.
+- **Privacy requests:** an admin can erase a buyer's data from the lead page. This deletes their contact details and every lead and inquiry for them, across all listings; the audit entry records no personal data. Copies already sent to a CRM or by email must be deleted there.
+- **Retention:** set `LEAD_RETENTION_DAYS` to purge inquiries older than N days, and any leads and contacts left with none. The daily cleanup job does this; `0` keeps leads until erased.
 - Replace `templates/public/privacy.html` with a counsel-approved notice before going live.
 
 ## Analytics: what is and isn't measured

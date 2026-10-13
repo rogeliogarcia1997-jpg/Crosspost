@@ -82,6 +82,7 @@ class Settings(BaseSettings):
     lead_rate_limit_per_10min: int = 5
     lead_form_min_seconds: int = 3
     privacy_contact_email: str = ""
+    lead_retention_days: int = 0  # 0 keeps leads until erased; otherwise inquiries older than this are purged
     ip_hash_salt: SecretStr = SecretStr("dev-ip-salt")
 
     # --- Email ------------------------------------------------------------

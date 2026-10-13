@@ -1,0 +1,38 @@
+name: tests
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: crosspost
+          POSTGRES_PASSWORD: ci-only-password
+          POSTGRES_DB: crosspost_test
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U crosspost" --health-interval 5s --health-timeout 5s --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+          cache: pip
+      - run: pip install -r requirements-dev.txt
+      - name: Tests (SQLite)
+        run: pytest -q
+      - name: Tests (PostgreSQL)
+        run: pytest -q
+        env:
+          TEST_DATABASE_URL: postgresql+psycopg://crosspost:ci-only-password@localhost:5432/crosspost_test
+      - name: Migrations apply cleanly on PostgreSQL
+        run: |
+          python -m alembic upgrade head
+          python -m alembic check
+        env:
+          DATABASE_URL: postgresql+psycopg://crosspost:ci-only-password@localhost:5432/crosspost_test

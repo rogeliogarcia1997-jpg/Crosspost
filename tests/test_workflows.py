@@ -444,3 +444,20 @@ def test_scheduled_sync_backs_off_after_auth_failure(db, provider):
     db.commit()
     run_pending()
     assert count(db, SyncRun) == 1
+
+
+def test_post_stuck_in_publishing_is_held_for_verification(db, provider, connect, sync):
+    from crosspost.services.publishing import flag_stuck_publishing
+
+    connect("test")
+    sync(mls_id="MOCK1001")
+    post = db.scalar(select(Post))
+    post.status = "publishing"  # simulate a worker that died mid-request
+    db.commit()
+    assert flag_stuck_publishing(db) == 0  # still within the lock timeout
+    assert flag_stuck_publishing(db, now=far_future()) == 1
+    db.commit()
+    run_pending(now=far_future())
+    db.expire_all()
+    assert db.get(Post, post.id).status == "needs_verification"
+    assert test_adapter.PUBLISHED == []

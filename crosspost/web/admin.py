@@ -436,6 +436,24 @@ def lead_update(lead_id: int, request: Request, status: str = Form(...), notes: 
     return _back(request, f"/admin/leads/{lead_id}")
 
 
+@router.post("/leads/{lead_id}/erase", dependencies=csrf)
+def lead_erase(lead_id: int, request: Request, confirm: str = Form(""), user: User = Depends(require_admin),
+               db: Session = Depends(get_db)):
+    from ..services.leads import erase_contact
+
+    lead = db.get(Lead, lead_id)
+    if lead is None:
+        raise HTTPException(404, "Lead not found.")
+    if confirm != "ERASE":
+        flash(request, 'Type ERASE to confirm deleting this buyer\'s data.', "error")
+        return _back(request, f"/admin/leads/{lead_id}")
+    removed = erase_contact(db, lead.contact)
+    audit(db, user, "contact_erased", "lead", lead_id, leads_removed=removed)  # no PII in the audit trail
+    db.commit()
+    flash(request, f"Buyer data erased ({removed} lead record(s)).")
+    return RedirectResponse("/admin/leads", status_code=303)
+
+
 @router.post("/leads/{lead_id}/crm", dependencies=csrf)
 def lead_crm(lead_id: int, request: Request, user: User = Depends(require_marketer), db: Session = Depends(get_db)):
     lead = db.get(Lead, lead_id)

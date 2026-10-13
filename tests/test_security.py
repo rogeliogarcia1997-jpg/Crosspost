@@ -237,3 +237,43 @@ def test_no_secrets_in_repository():
             value = value.split("#")[0].strip()
             if any(s in key for s in ("SECRET", "TOKEN", "PASSWORD", "API_KEY", "SALT")):
                 assert value.strip() in ("", "change-me") or value.startswith("<"), key
+
+
+# --- privacy requests and retention ----------------------------------------------------------
+def test_admin_can_erase_buyer_data(db, listing, client, login):
+    from crosspost.models import AuditLog, Contact
+
+    submit(client, listing)
+    lead = db.scalar(select(Lead))
+    csrf = login("marketer")
+    assert client.post(f"/admin/leads/{lead.id}/erase", data={"csrf_token": csrf, "confirm": "ERASE"}).status_code == 403
+    client.post("/logout", data={"csrf_token": csrf})
+    csrf = login("admin")
+    client.post(f"/admin/leads/{lead.id}/erase", data={"csrf_token": csrf, "confirm": "nope"})
+    assert db.scalar(select(func.count()).select_from(Lead)) == 1
+    resp = client.post(f"/admin/leads/{lead.id}/erase", data={"csrf_token": csrf, "confirm": "ERASE"})
+    assert resp.status_code == 303
+    db.expire_all()
+    for model in (Lead, Inquiry, Contact):
+        assert db.scalar(select(func.count()).select_from(model)) == 0
+    entry = db.scalar(select(AuditLog).where(AuditLog.action == "contact_erased"))
+    assert entry and "sam@example.org" not in str(entry.details)
+
+
+def test_retention_purge(db, listing, client):
+    from datetime import timedelta
+
+    from crosspost.db import utcnow
+    from crosspost.models import Contact
+    from crosspost.services.leads import purge_expired_leads
+
+    submit(client, listing)
+    submit(client, listing, email="recent@example.org")
+    old = db.scalar(select(Inquiry).join(Lead).join(Contact).where(Contact.email == "sam@example.org"))
+    old.submitted_at = utcnow() - timedelta(days=400)
+    db.commit()
+    assert purge_expired_leads(db, 0) == 0
+    assert purge_expired_leads(db, 365) == 1
+    db.commit()
+    assert [c.email for c in db.scalars(select(Contact))] == ["recent@example.org"]
+    assert db.scalar(select(func.count()).select_from(Lead)) == 1
