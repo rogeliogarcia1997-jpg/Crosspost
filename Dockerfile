@@ -9,4 +9,5 @@ COPY . .
 USER app
 EXPOSE 8000
 # Override the command for the worker: ["python", "-m", "crosspost.cli", "worker"]
-CMD ["uvicorn", "crosspost.main:app", "--host", "0.0.0.0", "--port", "8000", "--proxy-headers", "--forwarded-allow-ips", "*"]
+# PORT is set by platforms such as Render; defaults to 8000 elsewhere.
+CMD ["sh", "-c", "exec uvicorn crosspost.main:app --host 0.0.0.0 --port ${PORT:-8000} --proxy-headers --forwarded-allow-ips '*'"]

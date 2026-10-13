@@ -1,0 +1,127 @@
+# Render Blueprint: web service + background worker + managed PostgreSQL.
+# Setup steps and the variables to fill in: docs/deploy-render.md
+#
+# Secrets are never stored here. Values marked `sync: false` are entered in the
+# Render dashboard when the Blueprint is first applied; generated secrets are
+# created once by Render and shared by both services through an environment group.
+
+databases:
+  - name: crosspost-db
+    databaseName: crosspost
+    user: crosspost
+    plan: basic-256mb        # change to a larger plan as needed
+    # region: oregon         # keep all three resources in the same region
+
+envVarGroups:
+  - name: crosspost-secrets
+    envVars:
+      - key: SECRET_KEY
+        generateValue: true
+      - key: TOKEN_ENCRYPTION_KEY   # do not change after accounts are connected: stored tokens become unreadable
+        generateValue: true
+      - key: IP_HASH_SALT
+        generateValue: true
+
+  # Shared, non-secret configuration. Optional integrations (social app credentials,
+  # CRM, extra brokerage details) are added to this group in the dashboard later.
+  - name: crosspost-settings
+    envVars:
+      - key: APP_ENV
+        value: production
+      - key: SESSION_COOKIE_SECURE
+        value: "true"
+      - key: LOG_FORMAT
+        value: json
+      - key: MLS_PROVIDER
+        value: reso
+      - key: MARKETING_SCOPE
+        value: own_office
+      - key: PUBLISH_MODE_NEW_LISTING
+        value: manual_approval
+      - key: ENABLED_PLATFORMS
+        value: ""                   # choose platforms in the dashboard under Settings
+      - key: EMAIL_BACKEND
+        value: smtp
+      - key: SMTP_PORT
+        value: "587"
+
+services:
+  - type: web
+    name: crosspost-web
+    runtime: docker
+    plan: starter
+    branch: main
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /healthz
+    preDeployCommand: python -m crosspost.cli migrate
+    envVars:
+      - fromGroup: crosspost-secrets
+      - fromGroup: crosspost-settings
+      - key: DATABASE_URL
+        fromDatabase:
+          name: crosspost-db
+          property: connectionString
+      # Entered once in the dashboard; the worker reads the same values from this service.
+      - key: PUBLIC_BASE_URL          # e.g. https://listings.yourbrokerage.com
+        sync: false
+      - key: BROKERAGE_NAME
+        sync: false
+      - key: BROKERAGE_OFFICE_IDS     # your MLS office ID(s), comma separated
+        sync: false
+      - key: LEAD_NOTIFICATION_EMAILS
+        sync: false
+      - key: EMAIL_FROM
+        sync: false
+      - key: SMTP_HOST
+        sync: false
+      - key: SMTP_USERNAME
+        sync: false
+      - key: SMTP_PASSWORD
+        sync: false
+      - key: RESO_BASE_URL
+        sync: false
+      - key: RESO_TOKEN_URL
+        sync: false
+      - key: RESO_CLIENT_ID
+        sync: false
+      - key: RESO_CLIENT_SECRET
+        sync: false
+
+  - type: worker
+    name: crosspost-worker
+    runtime: docker
+    plan: starter
+    branch: main
+    dockerfilePath: ./Dockerfile
+    dockerCommand: python -m crosspost.cli worker
+    envVars:
+      - fromGroup: crosspost-secrets
+      - fromGroup: crosspost-settings
+      - key: DATABASE_URL
+        fromDatabase:
+          name: crosspost-db
+          property: connectionString
+      - key: PUBLIC_BASE_URL
+        fromService: { type: web, name: crosspost-web, envVarKey: PUBLIC_BASE_URL }
+      - key: BROKERAGE_NAME
+        fromService: { type: web, name: crosspost-web, envVarKey: BROKERAGE_NAME }
+      - key: BROKERAGE_OFFICE_IDS
+        fromService: { type: web, name: crosspost-web, envVarKey: BROKERAGE_OFFICE_IDS }
+      - key: LEAD_NOTIFICATION_EMAILS
+        fromService: { type: web, name: crosspost-web, envVarKey: LEAD_NOTIFICATION_EMAILS }
+      - key: EMAIL_FROM
+        fromService: { type: web, name: crosspost-web, envVarKey: EMAIL_FROM }
+      - key: SMTP_HOST
+        fromService: { type: web, name: crosspost-web, envVarKey: SMTP_HOST }
+      - key: SMTP_USERNAME
+        fromService: { type: web, name: crosspost-web, envVarKey: SMTP_USERNAME }
+      - key: SMTP_PASSWORD
+        fromService: { type: web, name: crosspost-web, envVarKey: SMTP_PASSWORD }
+      - key: RESO_BASE_URL
+        fromService: { type: web, name: crosspost-web, envVarKey: RESO_BASE_URL }
+      - key: RESO_TOKEN_URL
+        fromService: { type: web, name: crosspost-web, envVarKey: RESO_TOKEN_URL }
+      - key: RESO_CLIENT_ID
+        fromService: { type: web, name: crosspost-web, envVarKey: RESO_CLIENT_ID }
+      - key: RESO_CLIENT_SECRET
+        fromService: { type: web, name: crosspost-web, envVarKey: RESO_CLIENT_SECRET }

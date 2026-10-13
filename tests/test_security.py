@@ -277,3 +277,40 @@ def test_retention_purge(db, listing, client):
     db.commit()
     assert [c.email for c in db.scalars(select(Contact))] == ["recent@example.org"]
     assert db.scalar(select(func.count()).select_from(Lead)) == 1
+
+
+# --- hosting compatibility ---------------------------------------------------------------
+@pytest.mark.parametrize("url,expected", [
+    ("postgres://u:p@h:5432/db", "postgresql+psycopg://u:p@h:5432/db"),
+    ("postgresql://u:p@h/db", "postgresql+psycopg://u:p@h/db"),
+    ("postgresql+psycopg://u:p@h/db", "postgresql+psycopg://u:p@h/db"),
+    ("sqlite:///x.db", "sqlite:///x.db"),
+])
+def test_platform_database_urls_use_psycopg3(url, expected):
+    from crosspost.config import Settings
+
+    assert Settings(database_url=url).database_url == expected
+
+
+def test_any_random_secret_works_as_token_encryption_key(monkeypatch):
+    from cryptography.fernet import Fernet
+
+    from crosspost.config import reset_settings_cache
+    from crosspost.security import decrypt_secret, encrypt_secret
+
+    for key in ("Zm9vYmFyYmF6cXV4cXV1eHF1dXhxdXV4cXV1eHF1dXg=-not-fernet-but-random", Fernet.generate_key().decode()):
+        monkeypatch.setenv("TOKEN_ENCRYPTION_KEY", key)
+        reset_settings_cache()
+        token = encrypt_secret("page-token")
+        assert token and "page-token" not in token and decrypt_secret(token) == "page-token"
+
+
+def test_worker_refuses_insecure_production_config(monkeypatch):
+    from crosspost import cli
+    from crosspost.config import reset_settings_cache
+
+    monkeypatch.setenv("APP_ENV", "production")
+    reset_settings_cache()
+    with pytest.raises(SystemExit) as info:
+        cli.cmd_worker(None)
+    assert "Refusing to start in production" in str(info.value)

@@ -117,7 +117,7 @@ Useful commands:
 ## Running tests
 
 ```bash
-pytest                                   # 125 tests, SQLite
+pytest                                   # 131 tests, SQLite
 TEST_DATABASE_URL=postgresql+psycopg://user:pass@localhost/disposable_db pytest   # same suite on PostgreSQL (drops all tables)
 ```
 
@@ -251,6 +251,8 @@ These reduce risk but do not replace review by your broker or counsel and your M
 - A listing is never promoted as available once its status says otherwise.
 
 ## Deployment
+
+**Render:** `render.yaml` is a Render Blueprint for the web service, worker and PostgreSQL. Follow [docs/deploy-render.md](docs/deploy-render.md).
 
 **Docker Compose** (PostgreSQL + migrations + web + worker):
 

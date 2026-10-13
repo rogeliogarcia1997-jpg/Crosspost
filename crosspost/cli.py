@@ -65,6 +65,10 @@ def cmd_run_jobs(args: argparse.Namespace) -> None:
 def cmd_worker(args: argparse.Namespace) -> None:
     from .jobs.queue import worker_loop
 
+    problems = get_settings().validate_for_production()
+    if problems:
+        sys.exit("Refusing to start in production: " + "; ".join(problems))
+
     worker_loop()
 
 
@@ -96,7 +100,10 @@ def cmd_generate_key(args: argparse.Namespace) -> None:
 
 
 def main(argv: list[str] | None = None) -> None:
-    configure_logging(get_settings().log_level, "text")
+    settings = get_settings()
+    # Long-running processes follow LOG_FORMAT (JSON in production); one-off commands stay readable.
+    long_running = bool(argv or sys.argv[1:]) and (argv or sys.argv[1:])[0] == "worker"
+    configure_logging(settings.log_level, settings.log_format if long_running else "text")
     parser = argparse.ArgumentParser(prog="crosspost")
     sub = parser.add_subparsers(dest="command", required=True)
     sub.add_parser("migrate", help="apply database migrations").set_defaults(func=cmd_migrate)
