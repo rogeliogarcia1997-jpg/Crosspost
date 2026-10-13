@@ -129,6 +129,16 @@ class Settings(BaseSettings):
     def _strip_slash(cls, v: str) -> str:
         return v.rstrip("/")
 
+    @field_validator("database_url")
+    @classmethod
+    def _psycopg_driver(cls, v: str) -> str:
+        # Hosting platforms (e.g. Render, Heroku) hand out postgres:// or postgresql:// URLs, which
+        # SQLAlchemy would open with psycopg2. This project ships psycopg 3.
+        for prefix in ("postgres://", "postgresql://"):
+            if v.startswith(prefix):
+                return "postgresql+psycopg://" + v[len(prefix):]
+        return v
+
     # --- helpers ------------------------------------------------------------
     @staticmethod
     def _csv(value: str) -> list[str]:
@@ -161,8 +171,8 @@ class Settings(BaseSettings):
             return problems
         if "insecure" in self.secret_key.get_secret_value() or len(self.secret_key.get_secret_value()) < 32:
             problems.append("SECRET_KEY must be set to a random value of at least 32 characters")
-        if not self.token_encryption_key:
-            problems.append("TOKEN_ENCRYPTION_KEY must be set (Fernet key)")
+        if not self.token_encryption_key or len(self.token_encryption_key.get_secret_value()) < 32:
+            problems.append("TOKEN_ENCRYPTION_KEY must be set (a Fernet key or any random secret of 32+ characters)")
         if self.ip_hash_salt.get_secret_value() == "dev-ip-salt":
             problems.append("IP_HASH_SALT must be set")
         if self.database_url.startswith("sqlite"):

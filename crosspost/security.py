@@ -53,7 +53,12 @@ def password_problems(password: str) -> list[str]:
 def _fernet() -> Fernet:
     s = get_settings()
     if s.token_encryption_key:
-        return Fernet(s.token_encryption_key.get_secret_value().encode())
+        key = s.token_encryption_key.get_secret_value()
+        try:
+            return Fernet(key.encode())
+        except ValueError:
+            # Not a Fernet key (e.g. a platform-generated random secret): derive one from it.
+            return Fernet(base64.urlsafe_b64encode(hashlib.sha256(b"token-key:" + key.encode()).digest()))
     if s.is_production:
         raise RuntimeError("TOKEN_ENCRYPTION_KEY must be configured in production")
     # Development fallback: derive a key from SECRET_KEY so tokens are never stored in plaintext.
