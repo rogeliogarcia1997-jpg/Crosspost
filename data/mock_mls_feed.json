@@ -1,0 +1,73 @@
+{
+  "@odata.context": "Mock RESO Web API feed for development. NOT real MLS data.",
+  "value": [
+    {
+      "ListingKey": "MOCK-K-1001", "ListingId": "MOCK1001", "StandardStatus": "Active", "MlsStatus": "Active",
+      "StreetNumber": "1428", "StreetName": "Juniper Hollow", "StreetSuffix": "Dr", "City": "Austin", "StateOrProvince": "TX", "PostalCode": "78745",
+      "ListPrice": 525000, "OriginalListPrice": 525000, "PropertyType": "Residential", "PropertySubType": "Single Family Residence",
+      "BedroomsTotal": 3, "BathroomsTotalInteger": 2, "BathroomsFull": 2, "LivingArea": 1850, "LotSizeAcres": 0.21, "YearBuilt": 2004,
+      "PublicRemarks": "Updated single-story home with an open floor plan and abundant natural light. The kitchen offers quartz counters and stainless appliances. The backyard includes a covered patio and mature shade trees.",
+      "InteriorFeatures": ["Open Floorplan", "Quartz Counters", "Walk-In Closet(s)"], "PatioAndPorchFeatures": ["Covered Patio"], "GarageSpaces": 2,
+      "InternetEntireListingDisplayYN": true, "InternetAddressDisplayYN": true,
+      "ListAgentMlsId": "AGT200", "ListAgentFullName": "Jordan Rivera", "ListAgentEmail": "jordan.rivera@example.com", "ListAgentDirectPhone": "512-555-0100",
+      "ListOfficeMlsId": "OFF100", "ListOfficeName": "Example Realty Group", "ListOfficePhone": "512-555-0199",
+      "OriginalEntryTimestamp": "2026-10-01T15:00:00Z", "ModificationTimestamp": "2026-10-01T15:00:00Z",
+      "Media": [
+        {"MediaURL": "/static/mock/home-1.svg", "Order": 0, "MediaCategory": "Photo", "ShortDescription": "Front exterior", "Permission": ["Public"]},
+        {"MediaURL": "/static/mock/home-2.svg", "Order": 1, "MediaCategory": "Photo", "ShortDescription": "Kitchen", "Permission": ["Public"]},
+        {"MediaURL": "/static/mock/home-3.svg", "Order": 2, "MediaCategory": "Photo", "ShortDescription": "Covered patio", "Permission": ["Public"]}
+      ],
+      "OpenHouse": []
+    },
+    {
+      "ListingKey": "MOCK-K-1002", "ListingId": "MOCK1002", "StandardStatus": "Active",
+      "StreetNumber": "77", "StreetName": "Harbor View", "StreetSuffix": "Ln", "UnitNumber": "4B", "City": "Round Rock", "StateOrProvince": "TX", "PostalCode": "78664",
+      "ListPrice": 312500, "PropertyType": "Residential", "PropertySubType": "Condominium",
+      "BedroomsTotal": 2, "BathroomsTotalDecimal": 2.5, "LivingArea": 1240, "YearBuilt": 2016,
+      "PublicRemarks": "Two-level condominium with a private balcony and attached garage. Community pool and fitness center on site.",
+      "InteriorFeatures": ["Kitchen Island"], "CommunityFeatures": ["Pool", "Fitness Center"], "GarageSpaces": 1,
+      "InternetEntireListingDisplayYN": true, "InternetAddressDisplayYN": true,
+      "ListAgentMlsId": "AGT201", "ListAgentFullName": "Sam Patel", "ListOfficeMlsId": "OFF100", "ListOfficeName": "Example Realty Group",
+      "OriginalEntryTimestamp": "2026-10-03T12:00:00Z", "ModificationTimestamp": "2026-10-05T12:00:00Z",
+      "Media": [
+        {"MediaURL": "/static/mock/home-4.svg", "Order": 0, "MediaCategory": "Photo", "Permission": ["Public"]},
+        {"MediaURL": "/static/mock/home-5.svg", "Order": 1, "MediaCategory": "Photo", "Permission": ["Private"]}
+      ],
+      "OpenHouse": [
+        {"OpenHouseKey": "OH-1002-1", "OpenHouseStartTime": "2026-12-19T19:00:00Z", "OpenHouseEndTime": "2026-12-19T21:00:00Z", "OpenHouseStatus": "Active"}
+      ]
+    },
+    {
+      "ListingKey": "MOCK-K-1003", "ListingId": "MOCK1003", "StandardStatus": "Active",
+      "StreetNumber": "9", "StreetName": "Cedar Bend", "StreetSuffix": "Rd", "City": "Georgetown", "StateOrProvince": "TX", "PostalCode": "78628",
+      "ListPrice": 689900, "PropertyType": "Residential", "PropertySubType": "Single Family Residence",
+      "BedroomsTotal": 4, "BathroomsTotalInteger": 3, "LivingArea": 2710, "LotSizeAcres": 1.2,
+      "PublicRemarks": "Spacious home on over an acre. Perfect for a young family, and walking distance to church.",
+      "InteriorFeatures": ["Vaulted Ceiling(s)"], "PoolPrivateYN": true,
+      "InternetEntireListingDisplayYN": true, "InternetAddressDisplayYN": false,
+      "ListAgentMlsId": "AGT200", "ListAgentFullName": "Jordan Rivera", "ListOfficeMlsId": "OFF100", "ListOfficeName": "Example Realty Group",
+      "OriginalEntryTimestamp": "2026-10-06T12:00:00Z", "ModificationTimestamp": "2026-10-06T12:00:00Z",
+      "Media": [{"MediaURL": "/static/mock/home-6.svg", "Order": 0, "MediaCategory": "Photo"}]
+    },
+    {
+      "ListingKey": "MOCK-K-2001", "ListingId": "MOCK2001", "StandardStatus": "Active",
+      "StreetNumber": "500", "StreetName": "Lamar", "StreetSuffix": "Blvd", "City": "Austin", "StateOrProvince": "TX", "PostalCode": "78703",
+      "ListPrice": 975000, "PropertyType": "Residential", "PropertySubType": "Townhouse", "BedroomsTotal": 3, "BathroomsTotalInteger": 3, "LivingArea": 2100,
+      "PublicRemarks": "Listed by another brokerage; shown to demonstrate that other offices' listings are not marketed.",
+      "InternetEntireListingDisplayYN": true,
+      "ListAgentMlsId": "AGT900", "ListAgentFullName": "Casey Morgan", "ListOfficeMlsId": "OFF900", "ListOfficeName": "Other Brokerage LLC",
+      "OriginalEntryTimestamp": "2026-10-02T12:00:00Z", "ModificationTimestamp": "2026-10-02T12:00:00Z",
+      "Media": [{"MediaURL": "/static/mock/home-2.svg", "Order": 0, "MediaCategory": "Photo"}]
+    },
+    {
+      "ListingKey": "MOCK-K-1004", "ListingId": "MOCK1004", "StandardStatus": "Pending",
+      "StreetNumber": "3301", "StreetName": "Mesa Verde", "StreetSuffix": "Ct", "City": "Pflugerville", "StateOrProvince": "TX", "PostalCode": "78660",
+      "ListPrice": 410000, "PropertyType": "Residential", "PropertySubType": "Single Family Residence", "BedroomsTotal": 3, "BathroomsTotalInteger": 2, "LivingArea": 1640,
+      "PublicRemarks": "Under contract.",
+      "InternetEntireListingDisplayYN": true,
+      "ListAgentMlsId": "AGT201", "ListAgentFullName": "Sam Patel", "ListOfficeMlsId": "OFF100", "ListOfficeName": "Example Realty Group",
+      "OriginalEntryTimestamp": "2026-09-01T12:00:00Z", "ModificationTimestamp": "2026-10-04T12:00:00Z",
+      "Media": [{"MediaURL": "/static/mock/home-3.svg", "Order": 0, "MediaCategory": "Photo"}]
+    }
+  ]
+}
