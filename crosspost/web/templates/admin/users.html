@@ -1,0 +1,20 @@
+{% extends "admin_base.html" %}
+{% block page_title %}Users{% endblock %}
+{% block content %}
+<h1>Users</h1>
+<section class="panel table-wrap"><table><tr><th>Email</th><th>Role</th><th>Active</th><th>Last login</th><th></th></tr>
+{% for u in users %}<tr><td>{{ u.email }}</td>
+  <td colspan="2"><form method="post" action="/admin/users/{{ u.id }}/update" class="row"><input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    <select name="role" aria-label="Role">{% for r in roles %}<option {{ 'selected' if r == u.role }}>{{ r }}</option>{% endfor %}</select>
+    <label class="inline"><input type="checkbox" name="active" {{ 'checked' if u.is_active }}> active</label><button class="small secondary">Save</button></form></td>
+  <td><small>{{ u.last_login_at|dt }}</small></td><td></td></tr>{% endfor %}
+</table></section>
+<section class="panel"><h2>Add user</h2>
+  <form method="post" action="/admin/users"><input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    <label for="email">Email</label><input id="email" type="email" name="email" required>
+    <label for="password">Temporary password (12+ characters, mixed case)</label><input id="password" type="password" name="password" autocomplete="new-password" required>
+    <label for="role">Role</label><select id="role" name="role">{% for r in roles %}<option>{{ r }}</option>{% endfor %}</select>
+    <p class="muted"><small><strong>viewer</strong>: dashboards and analytics, no lead contact details. <strong>marketer</strong>: approve posts, manage leads, trigger syncs. <strong>admin</strong>: everything, including social accounts, settings and users.</small></p>
+    <p><button>Create user</button></p></form>
+</section>
+{% endblock %}

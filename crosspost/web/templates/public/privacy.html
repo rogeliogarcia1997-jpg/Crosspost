@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% block title %}Privacy notice{% endblock %}
+{% block body %}
+{% include "public/_header.html" %}
+<main class="landing">
+  <div class="panel">
+    <h1>Privacy notice</h1>
+    <p class="muted">Version {{ consent_version }}. Replace this template text with your counsel-approved notice before going live.</p>
+    <h2>What we collect</h2>
+    <p>When you submit an inquiry we collect your name, email address, optional phone number, preferred contact method, your message, the property you asked about, and how you reached the page (for example, which social media post you clicked). We store a one-way hash of your IP address for spam prevention, not the address itself.</p>
+    <h2>How we use it</h2>
+    <p>To respond to your inquiry and arrange showings. If you opt in, we may email you about other properties. Opting in is never required to submit an inquiry. Text messages are sent only if you choose text as your contact method and agree to receive them.</p>
+    <h2>Sharing</h2>
+    <p>Your inquiry is shared with the listing brokerage's agents and, where configured, our customer relationship management (CRM) system. We do not sell your personal information.</p>
+    <h2>Your choices</h2>
+    <p>You can ask us to access, correct, or delete your information{% if settings().privacy_contact_email %} by emailing <a href="mailto:{{ settings().privacy_contact_email }}">{{ settings().privacy_contact_email }}</a>{% endif %}. Reply STOP to any text message to opt out of texts, or use the unsubscribe link in any marketing email.</p>
+  </div>
+  {% include "public/_footer.html" %}
+</main>
+{% endblock %}

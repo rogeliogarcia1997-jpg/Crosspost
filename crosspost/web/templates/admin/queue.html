@@ -1,0 +1,33 @@
+{% extends "admin_base.html" %}
+{% block page_title %}Publishing Queue{% endblock %}
+{% block content %}
+<h1>Publishing queue</h1>
+<div class="row">
+  {% for g, label in [('awaiting', 'Awaiting approval / manual'), ('scheduled', 'Scheduled & queued'), ('attention', 'Needs attention'), ('published', 'Published'), ('closed', 'Rejected / canceled / skipped')] %}
+  <a class="button small {{ '' if group == g else 'secondary' }}" href="/admin/queue?group={{ g }}{{ '&platform=' ~ platform if platform }}">{{ label }} ({{ counts[g] }})</a>
+  {% endfor %}
+</div>
+<form class="filters" method="get"><input type="hidden" name="group" value="{{ group }}">
+  <div><label for="platform">Platform</label><select id="platform" name="platform"><option value="">All</option>{% for p in platforms %}<option {{ 'selected' if p == platform }}>{{ p }}</option>{% endfor %}</select></div><button>Filter</button></form>
+{% for p in posts %}
+<section class="panel">
+  <div class="row spread">
+    <div><strong><a href="/admin/posts/{{ p.id }}">#{{ p.id }}</a> · {{ p.platform }}</strong> · {{ p.social_account.display_name }} · <a href="/admin/listings/{{ p.listing_id }}">MLS# {{ p.listing.mls_id }}</a> · {{ p.kind.replace('_', ' ') }}</div>
+    <div><span class="badge {{ p.status }}">{{ p.status.replace('_', ' ') }}</span>{% if p.scheduled_for %} <small>for {{ p.scheduled_for|dt }}</small>{% endif %}</div>
+  </div>
+  {% for w in p.warnings %}<div class="notice">{{ w }}</div>{% endfor %}
+  {% if p.last_error %}<div class="notice bad">{{ p.last_error }}</div>{% endif %}
+  <pre class="post">{{ p.title ~ '\n\n' if p.title }}{{ p.text }}</pre>
+  {% if p.media %}<div class="thumbs">{% for m in p.media %}<img src="{{ m.url }}" alt="{{ m.alt }}">{% endfor %}</div>{% endif %}
+  {% if user.role != 'viewer' %}<div class="row">
+    {% if p.status == 'pending_approval' %}
+      <form class="inline" method="post" action="/admin/posts/{{ p.id }}/approve"><input type="hidden" name="csrf_token" value="{{ csrf_token }}"><button class="small">Approve</button></form>
+      <form class="inline" method="post" action="/admin/posts/{{ p.id }}/reject"><input type="hidden" name="csrf_token" value="{{ csrf_token }}"><input type="hidden" name="reason" value="Rejected from queue"><button class="small danger">Reject</button></form>
+    {% endif %}
+    {% if p.status in ('failed', 'needs_verification', 'blocked_auth') %}<form class="inline" method="post" action="/admin/posts/{{ p.id }}/retry"><input type="hidden" name="csrf_token" value="{{ csrf_token }}"><button class="small">Retry</button></form>{% endif %}
+    {% if p.status in ('manual_ready', 'needs_verification') %}<a class="button small secondary" href="/admin/posts/{{ p.id }}">Record as posted…</a>{% endif %}
+    <a class="button small secondary" href="/admin/posts/{{ p.id }}">Details &amp; log</a>
+  </div>{% endif %}
+</section>
+{% else %}<div class="panel muted">Nothing here.</div>{% endfor %}
+{% endblock %}

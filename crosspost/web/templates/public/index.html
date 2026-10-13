@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block title %}Homes for sale · {{ settings().brokerage_name or settings().app_name }}{% endblock %}
+{% block head %}<meta name="description" content="Current listings from {{ settings().brokerage_name }}">{% endblock %}
+{% block body %}
+{% include "public/_header.html" %}
+<main class="landing">
+  <h1>Current listings</h1>
+  {% if not listings %}<p class="muted">No listings are being marketed right now. Please check back soon.</p>{% endif %}
+  <div class="listing-cards">
+    {% for l in listings %}
+    <a class="panel listing-card" href="/p/{{ l.slug }}?utm_source=bio_link&amp;utm_medium=social">
+      {% if l.authorized_photos %}<img src="{{ l.authorized_photos[0].url }}" alt="{{ l.authorized_photos[0].caption or 'Photo of ' ~ l.display_address }}" loading="lazy">{% endif %}
+      <div class="body">
+        <strong>{{ l.price|money }}</strong>
+        <div>{{ l.display_address }}</div>
+        <small>{% if l.bedrooms is not none %}{{ l.bedrooms }} bd{% endif %}{% if l.bathrooms_total is not none %} · {{ l.bathrooms_total|float|round(1) }} ba{% endif %}{% if l.living_area_sqft %} · {{ "{:,}".format(l.living_area_sqft) }} sq ft{% endif %} · MLS# {{ l.mls_id }}</small>
+      </div>
+    </a>
+    {% endfor %}
+  </div>
+  {% include "public/_footer.html" %}
+</main>
+{% endblock %}

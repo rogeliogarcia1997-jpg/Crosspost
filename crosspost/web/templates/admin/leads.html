@@ -1,0 +1,23 @@
+{% extends "admin_base.html" %}
+{% block page_title %}Leads{% endblock %}
+{% block content %}
+<div class="row spread"><h1>Buyer leads</h1>
+  <a class="button small secondary" href="/admin/leads/export.csv?q={{ q|urlencode }}&amp;listing={{ listing }}&amp;platform={{ platform }}&amp;status={{ status }}">Export CSV</a></div>
+<form class="filters" method="get">
+  <div><label for="q">Search</label><input id="q" type="search" name="q" value="{{ q }}" placeholder="Name, email, phone, MLS#"></div>
+  <div><label for="listing">Listing</label><select id="listing" name="listing"><option value="">All</option>{% for l in listings %}<option value="{{ l.id }}" {{ 'selected' if listing == l.id|string }}>{{ l.mls_id }} · {{ l.display_address }}</option>{% endfor %}</select></div>
+  <div><label for="platform">Platform</label><select id="platform" name="platform"><option value="">All</option>{% for p in platforms %}<option {{ 'selected' if p == platform }}>{{ p }}</option>{% endfor %}</select></div>
+  <div><label for="status">Status</label><select id="status" name="status"><option value="">All</option>{% for s in statuses %}<option {{ 'selected' if s == status }}>{{ s }}</option>{% endfor %}</select></div>
+  <button>Filter</button>
+</form>
+<div class="panel table-wrap"><table>
+  <tr><th>Buyer</th><th>Contact</th><th>Listing</th><th>Source</th><th>Status</th><th class="num">Inquiries</th><th>Last inquiry</th></tr>
+  {% for l in leads %}
+  <tr><td><a href="/admin/leads/{{ l.id }}">{{ l.contact.full_name }}</a></td><td><small>{{ l.contact.email }}{% if l.contact.phone %}<br>{{ l.contact.phone }}{% endif %}</small></td>
+    <td><a href="/admin/listings/{{ l.listing_id }}">{{ l.listing.mls_id }}</a><br><small>{{ l.listing.display_address }}</small></td>
+    <td>{{ l.source_platform }}{% if l.campaign %}<br><small>{{ l.campaign.code }}</small>{% endif %}</td>
+    <td><span class="badge {{ l.status }}">{{ l.status }}</span></td><td class="num">{{ l.inquiries|length }}</td><td><small>{{ l.last_inquiry_at|dt }}</small></td></tr>
+  {% else %}<tr><td colspan="7" class="muted">No leads match.</td></tr>{% endfor %}
+</table></div>
+<p class="muted"><small>Lead records contain personal information. Exports are logged; store and share them only as your privacy policy permits.</small></p>
+{% endblock %}

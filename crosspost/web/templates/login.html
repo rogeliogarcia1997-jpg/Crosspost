@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block title %}Sign in · {{ settings().app_name }}{% endblock %}
+{% block head %}<meta name="robots" content="noindex">{% endblock %}
+{% block body %}
+<main class="container">
+  <div class="panel" id="login">
+    <h1>Sign in</h1>
+    {% if error %}<div class="flash error" role="alert">{{ error }}</div>{% endif %}
+    <form method="post" action="/login">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+      <input type="hidden" name="next" value="{{ next }}">
+      <label for="email">Email</label><input id="email" type="email" name="email" autocomplete="username" required>
+      <label for="password">Password</label><input id="password" type="password" name="password" autocomplete="current-password" required>
+      <p><button>Sign in</button></p>
+    </form>
+  </div>
+</main>
+{% endblock %}

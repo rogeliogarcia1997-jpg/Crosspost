@@ -1,0 +1,54 @@
+{% extends "admin_base.html" %}
+{% set l = lead %}
+{% block page_title %}Lead #{{ l.id }}{% if user.role == 'admin' %}
+<section class="panel"><h2>Privacy request</h2>
+  <p class="muted"><small>Permanently deletes this buyer's contact details, every lead and inquiry for them across all listings, and CRM sync records in this application. Records already delivered to an external CRM or email must be deleted there separately.</small></p>
+  <form method="post" action="/admin/leads/{{ l.id }}/erase"><input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    <label for="confirm">Type ERASE to confirm</label><input id="confirm" type="text" name="confirm" autocomplete="off">
+    <p><button class="danger small">Erase buyer data</button></p></form>
+</section>
+{% endif %}
+{% endblock %}
+{% block content %}
+<p><a href="/admin/leads">← Leads</a></p>
+<div class="row spread"><h1>{{ l.contact.full_name }}</h1><span class="badge {{ l.status }}">{{ l.status }}</span></div>
+<div class="grid two">
+  <section class="panel"><h2>Contact</h2>
+    <table>
+      <tr><th>Email</th><td><a href="mailto:{{ l.contact.email }}">{{ l.contact.email }}</a></td></tr>
+      <tr><th>Phone</th><td>{{ l.contact.phone or '—' }}</td></tr>
+      <tr><th>Preferred contact</th><td>{{ l.preferred_contact_method }}</td></tr>
+      <tr><th>Marketing consent</th><td>{{ 'Yes, ' ~ (l.marketing_consent_at|dt) if l.marketing_consent else 'No' }}</td></tr>
+      <tr><th>SMS consent</th><td>{{ 'Yes, ' ~ (l.sms_consent_at|dt) if l.sms_consent else 'No' }}</td></tr>
+      <tr><th>Property</th><td><a href="/admin/listings/{{ l.listing_id }}">MLS# {{ l.listing.mls_id }}</a> · {{ l.listing.display_address }} ({{ l.listing.status }})</td></tr>
+      <tr><th>Source</th><td>{{ l.source_platform }}{% if l.campaign %} · campaign {{ l.campaign.code }}{% endif %}</td></tr>
+      <tr><th>First inquiry</th><td>{{ l.created_at|dt }}</td></tr>
+    </table>
+    {% if other_leads %}<h3>Other properties this buyer asked about</h3><ul class="plain">{% for o in other_leads %}<li><a href="/admin/leads/{{ o.id }}">MLS# {{ o.listing.mls_id }} · {{ o.listing.display_address }}</a></li>{% endfor %}</ul>{% endif %}
+  </section>
+  <section class="panel"><h2>Status</h2>
+    <form method="post" action="/admin/leads/{{ l.id }}/update"><input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+      <label for="status">Lead status</label><select id="status" name="status">{% for s in statuses %}<option {{ 'selected' if s == l.status }}>{{ s }}</option>{% endfor %}</select>
+      <label for="notes">Notes</label><textarea id="notes" name="notes" maxlength="5000">{{ l.notes or '' }}</textarea>
+      <p><button class="small">Save</button></p></form>
+    <h3>CRM</h3>
+    {% if crm %}<ul class="plain">{% for c in crm %}<li>{{ c.provider }} · <span class="badge {{ c.status }}">{{ c.status }}</span>{% if c.external_id %} · {{ c.external_id }}{% endif %}{% if c.last_error %}<br><small>{{ c.last_error }}</small>{% endif %}</li>{% endfor %}</ul>{% endif %}
+    {% if crm_enabled %}<form method="post" action="/admin/leads/{{ l.id }}/crm"><input type="hidden" name="csrf_token" value="{{ csrf_token }}"><button class="small secondary">Send latest inquiry to CRM</button></form>{% else %}<p class="muted"><small>No CRM configured.</small></p>{% endif %}
+  </section>
+</div>
+<section class="panel"><h2>Inquiry history</h2>
+  {% for i in l.inquiries|reverse %}
+  <div class="stack"><div class="row spread"><strong>{{ i.submitted_at|dt }}</strong><span class="badge">{{ i.platform }}</span></div>
+    <p>{{ i.message or '(no message)' }}</p>
+    <p class="muted"><small>Preferred: {{ i.preferred_contact_method }}{% if i.utm_campaign %} · utm_campaign={{ i.utm_campaign }}{% endif %}{% if i.utm_content %} · utm_content={{ i.utm_content }}{% endif %}{% if i.referrer_url %} · referrer {{ i.referrer_url[:120] }}{% endif %} · consent text v{{ i.consent_text_version }}</small></p></div>
+  {% endfor %}
+</section>
+{% if user.role == 'admin' %}
+<section class="panel"><h2>Privacy request</h2>
+  <p class="muted"><small>Permanently deletes this buyer's contact details, every lead and inquiry for them across all listings, and CRM sync records in this application. Records already delivered to an external CRM or email must be deleted there separately.</small></p>
+  <form method="post" action="/admin/leads/{{ l.id }}/erase"><input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    <label for="confirm">Type ERASE to confirm</label><input id="confirm" type="text" name="confirm" autocomplete="off">
+    <p><button class="danger small">Erase buyer data</button></p></form>
+</section>
+{% endif %}
+{% endblock %}

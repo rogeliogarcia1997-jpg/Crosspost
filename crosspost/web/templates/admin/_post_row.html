@@ -1,0 +1,7 @@
+<tr>
+  <td><a href="/admin/posts/{{ p.id }}">#{{ p.id }}</a></td>
+  <td>{{ p.platform }}<br><small>{{ p.social_account.display_name }}</small></td>
+  <td><a href="/admin/listings/{{ p.listing_id }}">{{ p.listing.mls_id }}</a><br><small>{{ p.kind.replace('_', ' ') }}</small></td>
+  <td><span class="badge {{ p.status }}">{{ p.status.replace('_', ' ') }}</span>{% if p.last_error %}<br><small>{{ p.last_error[:140] }}</small>{% endif %}</td>
+  <td><small>{{ (p.published_at or p.scheduled_for or p.created_at)|dt }}</small></td>
+</tr>
