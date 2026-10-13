@@ -1,0 +1,21 @@
+{% extends "admin_base.html" %}
+{% block page_title %}Jobs{% endblock %}
+{% block content %}
+<h1>Background jobs</h1>
+<section class="panel"><h2>Failed (dead-lettered) jobs</h2>
+  <div class="table-wrap"><table><tr><th>ID</th><th>Type</th><th>Attempts</th><th>Error</th><th>Finished</th><th></th></tr>
+  {% for j in dead %}<tr><td>{{ j.id }}</td><td>{{ j.type }}</td><td>{{ j.attempts }}/{{ j.max_attempts }}</td><td><small>{{ (j.last_error or '')[:300] }}</small></td><td><small>{{ j.finished_at|dt }}</small></td>
+    <td>{% if user.role != 'viewer' %}<form method="post" action="/admin/jobs/{{ j.id }}/retry"><input type="hidden" name="csrf_token" value="{{ csrf_token }}"><button class="small">Retry</button></form>{% endif %}</td></tr>
+  {% else %}<tr><td colspan="6" class="muted">No failed jobs.</td></tr>{% endfor %}</table></div>
+</section>
+<section class="panel"><h2>Queued and running</h2>
+  <div class="table-wrap"><table><tr><th>ID</th><th>Type</th><th>Status</th><th>Run at</th><th>Attempts</th><th>Last error</th></tr>
+  {% for j in pending %}<tr><td>{{ j.id }}</td><td>{{ j.type }}</td><td><span class="badge {{ j.status }}">{{ j.status }}</span></td><td><small>{{ j.run_at|dt }}</small></td><td>{{ j.attempts }}</td><td><small>{{ (j.last_error or '')[:200] }}</small></td></tr>
+  {% else %}<tr><td colspan="6" class="muted">The queue is empty.</td></tr>{% endfor %}</table></div>
+</section>
+<section class="panel"><h2>MLS sync runs</h2>
+  <div class="table-wrap"><table><tr><th>ID</th><th>Mode</th><th>Status</th><th>Started</th><th class="num">Fetched</th><th class="num">New</th><th class="num">Updated</th><th>Errors</th></tr>
+  {% for r in runs %}<tr><td>{{ r.id }}</td><td>{{ r.mode }}</td><td><span class="badge {{ r.status }}">{{ r.status }}</span></td><td><small>{{ r.started_at|dt }}</small></td><td class="num">{{ r.fetched_count }}</td><td class="num">{{ r.created_count }}</td><td class="num">{{ r.updated_count }}</td><td><small>{{ (r.error or '')[:300] }}</small></td></tr>
+  {% else %}<tr><td colspan="8" class="muted">No runs yet.</td></tr>{% endfor %}</table></div>
+</section>
+{% endblock %}

@@ -1,0 +1,50 @@
+{% extends "admin_base.html" %}
+{% set p = post %}
+{% block page_title %}Post #{{ p.id }}{% endblock %}
+{% block content %}
+<p><a href="/admin/queue">← Queue</a></p>
+<div class="row spread"><h1>Post #{{ p.id }} · {{ spec.display_name }}</h1><span class="badge {{ p.status }}">{{ p.status.replace('_', ' ') }}</span></div>
+<div class="grid two">
+  <section class="panel"><h2>Preview</h2>
+    {% if p.title %}<h3>{{ p.title }}</h3>{% endif %}
+    <pre class="post">{{ p.text }}</pre>
+    <p class="muted"><small>{{ length }} / {{ spec.max_text }} characters{% if spec.url_length %} (links count as {{ spec.url_length }}){% endif %} · {{ p.media|length }} photo(s) (max {{ spec.max_photos }})</small></p>
+    {% if p.media %}<div class="thumbs">{% for m in p.media %}<img src="{{ m.url }}" alt="{{ m.alt }}">{% endfor %}</div>{% endif %}
+    {% for w in p.warnings %}<div class="notice">{{ w }}</div>{% endfor %}
+    {% if p.last_error %}<div class="notice bad">{{ p.last_error }}</div>{% endif %}
+    {% if user.role != 'viewer' and p.status in ('pending_approval', 'manual_ready') %}
+    <form method="post" action="/admin/posts/{{ p.id }}/edit"><input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+      <label for="text">Edit text</label><textarea id="text" name="text">{{ p.text }}</textarea>
+      <p class="muted"><small>Do not add details that are not in the MLS listing. The tracked link must remain.</small></p>
+      <button class="small secondary">Save text</button></form>
+    {% endif %}
+  </section>
+  <section class="panel"><h2>Details</h2>
+    <table>
+      <tr><th>Listing</th><td><a href="/admin/listings/{{ p.listing_id }}">MLS# {{ p.listing.mls_id }}</a> ({{ p.listing.status }})</td></tr>
+      <tr><th>Account</th><td>{{ p.social_account.display_name }} <span class="badge {{ p.social_account.status }}">{{ p.social_account.status }}</span></td></tr>
+      <tr><th>Kind</th><td>{{ p.kind.replace('_', ' ') }} <small class="muted">({{ p.event_key }})</small></td></tr>
+      <tr><th>Tracked link</th><td>{% if p.link_url %}<a href="{{ p.link_url }}" target="_blank" rel="noopener">{{ p.link_url }}</a>{% else %}—{% endif %}</td></tr>
+      <tr><th>Scheduled for</th><td>{{ p.scheduled_for|dt }}</td></tr>
+      <tr><th>Approved</th><td>{{ p.approved_at|dt }}</td></tr>
+      <tr><th>Published</th><td>{{ p.published_at|dt }}{% if p.external_post_url %} · <a href="{{ p.external_post_url }}" target="_blank" rel="noopener">view post</a>{% endif %}</td></tr>
+      <tr><th>Attempts</th><td>{{ p.attempts }}</td></tr>
+    </table>
+    {% if user.role != 'viewer' %}<div class="row">
+      {% if p.status == 'pending_approval' %}
+      <form class="inline" method="post" action="/admin/posts/{{ p.id }}/approve"><input type="hidden" name="csrf_token" value="{{ csrf_token }}"><button>Approve</button></form>
+      <form class="inline" method="post" action="/admin/posts/{{ p.id }}/reject"><input type="hidden" name="csrf_token" value="{{ csrf_token }}"><input type="text" name="reason" placeholder="Reason" maxlength="500"> <button class="danger">Reject</button></form>
+      {% endif %}
+      {% if p.status in ('failed', 'needs_verification', 'blocked_auth') %}<form class="inline" method="post" action="/admin/posts/{{ p.id }}/retry"><input type="hidden" name="csrf_token" value="{{ csrf_token }}"><button>Retry</button></form>{% endif %}
+    </div>
+    {% if p.status in ('manual_ready', 'needs_verification') %}
+    <form method="post" action="/admin/posts/{{ p.id }}/mark-published"><input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+      <h3>{{ 'Posted manually?' if p.status == 'manual_ready' else 'Verified that it was published?' }}</h3>
+      {% if p.status == 'needs_verification' %}<p class="muted"><small>Check the {{ spec.display_name }} account first. Retry only if the post does not exist, to avoid a duplicate.</small></p>{% endif %}
+      <label for="url">Post URL</label><input id="url" type="url" name="url" placeholder="https://…"><p><button class="small">Mark as published</button></p></form>
+    {% endif %}{% endif %}
+    <h2>Publishing log</h2>
+    <ul class="plain">{% for a in p.attempts_log %}<li>Attempt {{ a.attempt_no }} · <span class="badge {{ 'ok' if a.outcome == 'success' else 'bad' }}">{{ a.outcome }}</span> · {{ a.started_at|dt }}{% if a.http_status %} · HTTP {{ a.http_status }}{% endif %}{% if a.message %}<br><small>{{ a.message }}</small>{% endif %}</li>{% else %}<li class="muted">No attempts yet.</li>{% endfor %}</ul>
+  </section>
+</div>
+{% endblock %}

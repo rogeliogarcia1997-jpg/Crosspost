@@ -1,0 +1,44 @@
+{% extends "admin_base.html" %}
+{% block page_title %}Overview{% endblock %}
+{% block content %}
+<div class="row spread"><h1>Overview</h1>
+  {% if user.role != 'viewer' %}<form method="post" action="/admin/sync"><input type="hidden" name="csrf_token" value="{{ csrf_token }}"><input type="hidden" name="mode" value="incremental"><button class="small">Sync MLS now</button></form>{% endif %}
+</div>
+{% if reauth %}<div class="notice bad">{{ reauth|length }} social account(s) need re-authorization: {% for a in reauth %}<a href="/admin/accounts">{{ a.display_name }} ({{ a.platform }})</a>{{ ', ' if not loop.last }}{% endfor %}. Posts for these accounts are held until reconnected.</div>{% endif %}
+<div class="grid cards">
+  <div class="panel stat"><div class="value">{{ stats.active_listings }}</div><div class="label">Active listings</div></div>
+  <div class="panel stat"><div class="value">{{ stats.marketed_listings }}</div><div class="label">Active campaigns</div></div>
+  <div class="panel stat"><div class="value">{{ stats.awaiting_publication }}</div><div class="label"><a href="/admin/queue?group=awaiting">Awaiting publication</a></div></div>
+  <div class="panel stat"><div class="value">{{ stats.published_posts }}</div><div class="label">Successful posts</div></div>
+  <div class="panel stat"><div class="value">{{ stats.attention_posts }}</div><div class="label"><a href="/admin/queue?group=attention">Posts needing attention</a></div></div>
+  <div class="panel stat"><div class="value">{{ stats.leads }}</div><div class="label">Leads ({{ stats.qualified_leads }} qualified)</div></div>
+  <div class="panel stat"><div class="value">{{ stats.visits }}</div><div class="label">Landing page visits</div></div>
+  <div class="panel stat"><div class="value">{{ stats.conversion_rate if stats.conversion_rate is not none else '—' }}{% if stats.conversion_rate is not none %}%{% endif %}</div><div class="label">Visit → lead conversion</div></div>
+</div>
+<div class="grid two">
+  <section class="panel"><h2>Recent buyer leads</h2>
+    {% if user.role == 'viewer' %}<p class="muted">Lead details are restricted to marketers and administrators.</p>
+    {% elif not recent_leads %}<p class="muted">No leads yet.</p>
+    {% else %}<div class="table-wrap"><table><tr><th>Buyer</th><th>Listing</th><th>Source</th><th>When</th></tr>
+      {% for l in recent_leads %}<tr><td><a href="/admin/leads/{{ l.id }}">{{ l.contact.full_name }}</a> <span class="badge {{ l.status }}">{{ l.status }}</span></td><td>{{ l.listing.mls_id }}</td><td>{{ l.source_platform }}</td><td><small>{{ l.last_inquiry_at|dt }}</small></td></tr>{% endfor %}
+    </table></div>{% endif %}
+  </section>
+  <section class="panel"><h2>Campaign performance by platform</h2>
+    <div class="table-wrap"><table><tr><th>Platform</th><th class="num">Posts</th><th class="num">Clicks</th><th class="num">Visits</th><th class="num">Leads</th><th class="num">Conv.</th></tr>
+      {% for r in stats.platforms %}<tr><td>{{ r.platform }}</td><td class="num">{{ r.posts_published }}</td><td class="num">{{ r.clicks }}</td><td class="num">{{ r.visits }}</td><td class="num">{{ r.leads }}</td><td class="num">{{ '%.1f%%'|format(r.conversion_rate) if r.conversion_rate is not none else '—' }}</td></tr>
+      {% else %}<tr><td colspan="6" class="muted">No activity yet.</td></tr>{% endfor %}
+    </table></div>
+    <p class="muted"><small>All figures are measured by this application. Impressions and engagement are not collected ({{ unavailable.impressions }})</small></p>
+  </section>
+  <section class="panel"><h2>Failed jobs requiring attention</h2>
+    {% if not attention and not dead_jobs %}<p class="muted">Nothing needs attention.</p>{% endif %}
+    {% if attention %}<div class="table-wrap"><table><tr><th>Post</th><th>Platform</th><th>Listing</th><th>Status</th><th>When</th></tr>{% for p in attention %}{% include "admin/_post_row.html" %}{% endfor %}</table></div>{% endif %}
+    {% if dead_jobs %}<h3>Background jobs</h3><ul class="plain">{% for j in dead_jobs %}<li><span class="badge dead">dead</span> {{ j.type }} #{{ j.id }} <small>{{ (j.last_error or '')[:160] }}</small></li>{% endfor %}</ul><p><a href="/admin/jobs">Manage jobs</a></p>{% endif %}
+  </section>
+  <section class="panel"><h2>Publishing activity</h2>
+    {% if recent_posts %}<div class="table-wrap"><table><tr><th>Post</th><th>Platform</th><th>Listing</th><th>Status</th><th>When</th></tr>{% for p in recent_posts %}{% include "admin/_post_row.html" %}{% endfor %}</table></div>{% else %}<p class="muted">No posts published yet.</p>{% endif %}
+    <h3>MLS synchronization</h3>
+    <ul class="plain">{% for r in runs %}<li><span class="badge {{ r.status }}">{{ r.status }}</span> {{ r.mode }} · {{ r.started_at|dt }} · fetched {{ r.fetched_count }}, new {{ r.created_count }}, updated {{ r.updated_count }}{% if r.error %}<br><small>{{ r.error[:200] }}</small>{% endif %}</li>{% else %}<li class="muted">No sync has run yet.</li>{% endfor %}</ul>
+  </section>
+</div>
+{% endblock %}

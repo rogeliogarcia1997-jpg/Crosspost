@@ -1,0 +1,12 @@
+[project]
+name = "crosspost"
+version = "0.1.0"
+description = "Automated MLS listing distribution to social media with buyer lead capture"
+requires-python = ">=3.11"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+filterwarnings = [
+    # Third-party: starlette's TestClient still uses httpx; not actionable in this project.
+    "ignore:Using `httpx` with `starlette.testclient` is deprecated",
+]

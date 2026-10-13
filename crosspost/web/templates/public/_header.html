@@ -1,0 +1,4 @@
+<header class="public-header"><div class="inner row spread">
+  <a class="brand" href="/listings"><strong>{{ settings().brokerage_name or settings().app_name }}</strong></a>
+  {% if settings().brokerage_phone %}<a href="tel:{{ settings().brokerage_phone }}">{{ settings().brokerage_phone }}</a>{% endif %}
+</div></header>

@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block title %}Thank you{% endblock %}
+{% block head %}<meta name="robots" content="noindex">{% endblock %}
+{% block body %}
+{% include "public/_header.html" %}
+<main class="landing">
+  <div class="panel">
+    <h1>Thank you — we received your inquiry.</h1>
+    <p>A member of our team will contact you about {{ listing.display_address }} (MLS# {{ listing.mls_id }}) using your preferred contact method.</p>
+    <p><a href="/p/{{ listing.slug }}">Back to the property</a> · <a href="/listings">See other listings</a></p>
+  </div>
+  {% include "public/_footer.html" %}
+</main>
+{% endblock %}

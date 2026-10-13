@@ -1,0 +1,30 @@
+{% extends "admin_base.html" %}
+{% block page_title %}Listings{% endblock %}
+{% block content %}
+<div class="row spread"><h1>Listings</h1>
+{% if user.role != 'viewer' %}<div class="row">
+  <form method="post" action="/admin/sync"><input type="hidden" name="csrf_token" value="{{ csrf_token }}"><input type="hidden" name="mode" value="incremental"><button class="small">Sync changes</button></form>
+  <form method="post" action="/admin/sync"><input type="hidden" name="csrf_token" value="{{ csrf_token }}"><input type="hidden" name="mode" value="full"><button class="small secondary">Full sync</button></form>
+</div>{% endif %}</div>
+<p class="muted">Last sync: {% if last_run %}<span class="badge {{ last_run.status }}">{{ last_run.status }}</span> {{ last_run.started_at|dt }}{% if last_run.error %} — {{ last_run.error[:200] }}{% endif %}{% else %}never{% endif %}</p>
+<form class="filters" method="get">
+  <div><label for="q">Search</label><input id="q" type="search" name="q" value="{{ q }}" placeholder="MLS#, address, city, ZIP"></div>
+  <div><label for="status">Status</label><select id="status" name="status"><option value="">Any</option>{% for s in statuses %}<option {{ 'selected' if s == status }}>{{ s }}</option>{% endfor %}</select></div>
+  <div><label for="marketing">Marketing</label><select id="marketing" name="marketing"><option value="">Any</option><option value="authorized" {{ 'selected' if marketing == 'authorized' }}>Authorized</option><option value="not_authorized" {{ 'selected' if marketing == 'not_authorized' }}>Not authorized</option></select></div>
+  <button>Filter</button>
+</form>
+<div class="panel table-wrap"><table>
+  <tr><th>MLS#</th><th>Address</th><th class="num">Price</th><th>Status</th><th>Marketing</th><th>Posts</th><th>Synced</th></tr>
+  {% for r in rows %}{% set l = r.listing %}
+  <tr>
+    <td><a href="/admin/listings/{{ l.id }}">{{ l.mls_id }}</a></td>
+    <td>{{ l.display_address }}<br><small>{{ l.list_office_name or '—' }}</small></td>
+    <td class="num">{{ l.price|money }}</td>
+    <td><span class="badge {{ 'active' if l.is_available else 'ended' }}">{{ l.status }}</span></td>
+    <td>{% if r.auth.authorized %}<span class="badge ok">authorized</span>{% else %}<span class="badge" title="{{ r.auth.reason }}">not authorized</span>{% endif %}</td>
+    <td><small>{% for s, n in r.counts.items() %}{{ s.replace('_', ' ') }}: {{ n }}{{ ', ' if not loop.last }}{% else %}—{% endfor %}</small></td>
+    <td><small>{{ l.last_synced_at|dt }}</small></td>
+  </tr>
+  {% else %}<tr><td colspan="7" class="muted">No listings. Run a sync to import listings from the MLS feed.</td></tr>{% endfor %}
+</table></div>
+{% endblock %}

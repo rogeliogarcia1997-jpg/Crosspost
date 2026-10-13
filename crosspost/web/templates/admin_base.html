@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block title %}{% block page_title %}Dashboard{% endblock %} · {{ settings().app_name }}{% endblock %}
+{% block head %}<meta name="robots" content="noindex">{% endblock %}
+{% block body %}
+{% set path = request.url.path %}
+<header class="topbar">
+  <a class="brand" href="/admin">{{ settings().app_name }}</a>
+  <nav aria-label="Main">
+    <a href="/admin" class="{{ 'active' if path == '/admin' }}">Overview</a>
+    <a href="/admin/listings" class="{{ 'active' if path.startswith('/admin/listings') }}">Listings</a>
+    <a href="/admin/queue" class="{{ 'active' if path.startswith('/admin/queue') or path.startswith('/admin/posts') }}">Publishing Queue</a>
+    {% if user and user.role in ('admin', 'marketer') %}<a href="/admin/leads" class="{{ 'active' if path.startswith('/admin/leads') }}">Leads</a>{% endif %}
+    <a href="/admin/analytics" class="{{ 'active' if path.startswith('/admin/analytics') }}">Analytics</a>
+    <a href="/admin/accounts" class="{{ 'active' if path.startswith('/admin/accounts') }}">Social Accounts</a>
+    <a href="/admin/jobs" class="{{ 'active' if path.startswith('/admin/jobs') }}">Jobs</a>
+    {% if user and user.role == 'admin' %}
+    <a href="/admin/settings" class="{{ 'active' if path.startswith('/admin/settings') }}">Settings</a>
+    <a href="/admin/users" class="{{ 'active' if path.startswith('/admin/users') }}">Users</a>
+    {% endif %}
+  </nav>
+  {% if user %}
+  <span class="muted">{{ user.email }} · {{ user.role }}</span>
+  <form method="post" action="/logout"><input type="hidden" name="csrf_token" value="{{ csrf_token }}"><button class="secondary small">Sign out</button></form>
+  {% endif %}
+</header>
+<main class="container">
+  {% if flash %}<div class="flash {{ flash.kind }}" role="status">{{ flash.message }}</div>{% endif %}
+  {% block content %}{% endblock %}
+</main>
+{% endblock %}

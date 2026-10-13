@@ -1,0 +1,31 @@
+{% extends "admin_base.html" %}
+{% block page_title %}Settings{% endblock %}
+{% block content %}
+<h1>Publishing rules</h1>
+<form method="post" action="/admin/settings" class="panel"><input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+  <div class="grid two">
+    <div>
+      <label for="nlm">New listings</label><select id="nlm" name="new_listing_mode">{% for m in modes %}<option value="{{ m }}" {{ 'selected' if m == rules.new_listing_mode }}>{{ m.replace('_', ' ') }}</option>{% endfor %}</select>
+      <label for="delay">Delay for "scheduled" mode (minutes)</label><input id="delay" type="number" min="0" name="delay_minutes" value="{{ rules.delay_minutes }}">
+      <label class="inline"><input type="checkbox" name="announce_price_reductions" {{ 'checked' if rules.announce_price_reductions }}> Announce price reductions</label>
+      <label for="prm">Price reduction posts</label><select id="prm" name="price_reduction_mode">{% for m in modes %}<option value="{{ m }}" {{ 'selected' if m == rules.price_reduction_mode }}>{{ m.replace('_', ' ') }}</option>{% endfor %}</select>
+      <label class="inline"><input type="checkbox" name="announce_open_houses" {{ 'checked' if rules.announce_open_houses }}> Announce open houses</label>
+      <label for="ohm">Open house posts</label><select id="ohm" name="open_house_mode">{% for m in modes %}<option value="{{ m }}" {{ 'selected' if m == rules.open_house_mode }}>{{ m.replace('_', ' ') }}</option>{% endfor %}</select>
+      <label for="ohl">Publish open house posts this many hours before the event</label><input id="ohl" type="number" min="0" name="open_house_lead_hours" value="{{ rules.open_house_lead_hours }}">
+    </div>
+    <div>
+      <label class="inline"><input type="checkbox" name="announce_status_changes" {{ 'checked' if rules.announce_status_changes }}> Draft "under contract" / "sold" posts (always require approval; confirm seller/broker permission)</label>
+      <label for="rep">Repost still-available listings every N days (0 = off)</label><input id="rep" type="number" min="0" name="repost_interval_days" value="{{ rules.repost_interval_days }}">
+      <label class="inline"><input type="checkbox" name="delete_posts_on_unavailable" {{ 'checked' if rules.delete_posts_on_unavailable }}> Delete published posts when a listing becomes unavailable (only on platforms whose API supports deletion)</label>
+      <label>Platforms that receive automatic posts</label>
+      {% for p in platforms %}<label class="inline"><input type="checkbox" name="enabled_platforms" value="{{ p }}" {{ 'checked' if p in rules.enabled_platforms }}> {{ p }}</label>{% endfor %}
+    </div>
+  </div>
+  <p class="notice"><small>Regardless of these rules, promotional posts are never published for listings that are not Active, and listings are only marketed when authorized (own office/agent or explicit override).</small></p>
+  <p><button>Save rules</button></p>
+</form>
+<section class="panel"><h2>Environment configuration (read-only)</h2>
+  <table>{% for k, v in config.items() %}<tr><th>{{ k }}</th><td>{{ v }}</td></tr>{% endfor %}</table>
+  <p class="muted"><small>Secrets are configured through environment variables and are never displayed.</small></p>
+</section>
+{% endblock %}

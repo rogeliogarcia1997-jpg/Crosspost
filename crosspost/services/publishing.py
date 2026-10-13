@@ -111,12 +111,15 @@ def plan_posts(
     context: dict[str, Any] | None = None,
     scheduled_for: datetime | None = None,
     now: datetime | None = None,
+    account_ids: list[int] | None = None,
 ) -> list[Post]:
     """Create one post per eligible account for a listing event (idempotent)."""
     now = now or utcnow()
     campaign = get_or_create_campaign(db, listing)
     created: list[Post] = []
     for account in eligible_accounts(db, rules):
+        if account_ids is not None and account.id not in account_ids:
+            continue
         exists = db.scalar(select(Post.id).where(
             Post.campaign_id == campaign.id, Post.social_account_id == account.id,
             Post.kind == kind, Post.event_key == event_key))

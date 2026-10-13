@@ -114,3 +114,52 @@ def sync(provider):
             return run.id
 
     return _sync
+
+
+@pytest.fixture
+def client():
+    from fastapi.testclient import TestClient
+
+    from crosspost.web.app import create_app
+
+    with TestClient(create_app(), base_url="https://homes.example.com", follow_redirects=False) as c:
+        yield c
+
+
+PASSWORD = "Correct-Horse-Battery-9"
+
+
+@pytest.fixture
+def make_user():
+    from crosspost.db import session_scope
+    from crosspost.models import User
+    from crosspost.security import hash_password
+
+    def _make(role="admin", email=None):
+        email = email or f"{role}@example.com"
+        with session_scope() as s:
+            s.add(User(email=email, password_hash=hash_password(PASSWORD), role=role))
+        return email
+
+    return _make
+
+
+def csrf_from(html: str) -> str:
+    import re
+
+    match = re.search(r'name="csrf_token" value="([^"]+)"', html)
+    assert match, "csrf token not found"
+    return match.group(1)
+
+
+@pytest.fixture
+def login(client, make_user):
+    def _login(role="admin"):
+        email = make_user(role)
+        page = client.get("/login")
+        resp = client.post("/login", data={"email": email, "password": PASSWORD, "csrf_token": csrf_from(page.text),
+                                           "next": "/admin"})
+        assert resp.status_code == 303, resp.text
+        return csrf_from(client.get("/admin").text)
+
+    return _login

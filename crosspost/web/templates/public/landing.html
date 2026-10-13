@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+{% set l = listing %}
+{% block title %}{% if l.is_available %}{{ l.price|money }} · {% endif %}{{ l.display_address }}{% endblock %}
+{% block head %}
+<link rel="canonical" href="{{ canonical }}">
+<meta name="description" content="{{ facts.property_word|capitalize }} in {{ facts.location }}. MLS# {{ l.mls_id }}.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="{{ canonical }}">
+<meta property="og:title" content="{% if l.is_available %}{{ l.price|money }} · {% endif %}{{ l.display_address }}">
+<meta property="og:description" content="{{ facts.property_word|capitalize }} in {{ facts.location }} · Listing courtesy of {{ l.list_office_name or settings().brokerage_name }}">
+{% if photos %}<meta property="og:image" content="{{ photos[0].url }}">{% endif %}
+{% endblock %}
+{% block body %}
+{% include "public/_header.html" %}
+<main class="landing">
+  {% if not l.is_available %}
+  <div class="status-banner" role="status">This property is no longer available ({{ 'sold' if l.status == 'Closed' else ('under contract' if l.status in ('Pending', 'Active Under Contract') else 'off market') }}). Contact us about similar homes.</div>
+  {% endif %}
+  {% if photos %}
+  <div class="gallery">
+    <img src="{{ photos[0].url }}" alt="{{ photos[0].caption or 'Photo 1 of ' ~ l.display_address }}">
+    {% if photos|length > 1 %}<div class="side">
+      {% for p in photos[1:3] %}<img src="{{ p.url }}" alt="{{ p.caption or 'Photo ' ~ (loop.index + 1) ~ ' of ' ~ l.display_address }}" loading="lazy">{% endfor %}
+    </div>{% endif %}
+  </div>
+  {% endif %}
+  <div class="landing-grid">
+    <section>
+      {% if l.is_available and facts.price %}<p class="price">{{ facts.price }}</p>{% endif %}
+      <h1>{{ l.display_address }}</h1>
+      <div class="facts">
+        {% if facts.beds is not none %}<span><strong>{{ facts.beds }}</strong> beds</span>{% endif %}
+        {% if facts.baths %}<span><strong>{{ facts.baths }}</strong> baths</span>{% endif %}
+        {% if facts.sqft %}<span><strong>{{ "{:,}".format(facts.sqft) }}</strong> sq ft</span>{% endif %}
+        {% if facts.lot %}<span>{{ facts.lot }}</span>{% endif %}
+        <span>{{ facts.property_word|capitalize }}</span>
+        {% if facts.year_built %}<span>Built {{ facts.year_built }}</span>{% endif %}
+        <span>MLS# {{ l.mls_id }}</span>
+      </div>
+      {% if open_houses %}
+      <div class="panel"><h2>Open house</h2><ul class="plain">{% for o in open_houses %}<li>{{ o.label }}{% if o.virtual %} (virtual){% endif %}</li>{% endfor %}</ul></div>
+      {% endif %}
+      {% if l.is_available %}
+        {% if facts.description %}<h2>About this property</h2><p>{{ facts.description }}</p>{% endif %}
+        {% if facts.features %}<h2>Features</h2><ul>{% for f in facts.features %}<li>{{ f }}</li>{% endfor %}</ul>{% endif %}
+      {% endif %}
+      {% if photos|length > 3 %}<h2>More photos</h2><div class="thumbs">{% for p in photos[3:] %}<img src="{{ p.url }}" alt="{{ p.caption or 'Photo of ' ~ l.display_address }}" loading="lazy">{% endfor %}</div>{% endif %}
+      <p class="muted">Listing courtesy of {% if l.list_agent_name %}{{ l.list_agent_name }}, {% endif %}{{ l.list_office_name or settings().brokerage_name }}{% if l.list_office_phone %} · {{ l.list_office_phone }}{% endif %}.
+      Listing information last updated {{ l.mls_modified_at|dt("%B %d, %Y") if l.mls_modified_at else "—" }}.</p>
+    </section>
+    <aside class="panel lead-form" id="inquire">
+      <h2>{{ 'Request information or a showing' if l.is_available else 'Ask about similar homes' }}</h2>
+      {% if errors %}<div class="flash error" role="alert"><ul>{% for e in errors %}<li>{{ e }}</li>{% endfor %}</ul></div>{% endif %}
+      <form method="post" action="/p/{{ l.slug }}/inquire" novalidate>
+        <input type="hidden" name="form_token" value="{{ form_token }}">
+        {% for key in ('tl', 'utm_source', 'utm_medium', 'utm_campaign', 'utm_content', 'utm_term') %}{% if attribution.get(key) %}<input type="hidden" name="{{ key }}" value="{{ attribution.get(key) }}">{% endif %}{% endfor %}
+        <div class="hp" aria-hidden="true"><label for="website">Leave this field empty</label><input id="website" type="text" name="website" tabindex="-1" autocomplete="off"></div>
+        <label for="full_name">Name</label><input id="full_name" type="text" name="full_name" autocomplete="name" maxlength="120" required value="{{ form.full_name or '' }}">
+        <label for="email">Email</label><input id="email" type="email" name="email" autocomplete="email" maxlength="254" required value="{{ form.email or '' }}">
+        <label for="phone">Phone <span class="muted">(optional)</span></label><input id="phone" type="tel" name="phone" autocomplete="tel" maxlength="30" value="{{ form.phone or '' }}">
+        <label for="pcm">Preferred contact method</label>
+        <select id="pcm" name="preferred_contact_method">
+          {% for v, t in [('email', 'Email'), ('phone', 'Phone call'), ('text', 'Text message')] %}<option value="{{ v }}" {{ 'selected' if form.preferred_contact_method == v }}>{{ t }}</option>{% endfor %}
+        </select>
+        <label for="property">Property of interest</label><input id="property" type="text" value="MLS# {{ l.mls_id }} · {{ l.display_address }}" readonly>
+        <label for="message">Questions or comments <span class="muted">(optional)</span></label><textarea id="message" name="message" maxlength="2000">{{ form.message or '' }}</textarea>
+        <label class="inline"><input type="checkbox" name="sms_consent" value="yes" {{ 'checked' if form.sms_consent }}> <span>If I choose text message, I agree to receive texts about this inquiry. Msg &amp; data rates may apply. Reply STOP to opt out.</span></label>
+        <label class="inline"><input type="checkbox" name="marketing_consent" value="yes" {{ 'checked' if form.marketing_consent }}> <span>Optional: send me emails about other properties. Not required to submit this inquiry; unsubscribe anytime.</span></label>
+        <p><button>Send inquiry</button></p>
+        <p class="muted"><small>We use your information only to respond to this inquiry{% if l.is_available %} about this property{% endif %} and, if you opt in, to send you related listings. See our <a href="/privacy">privacy notice</a> (v{{ consent_version }}).</small></p>
+      </form>
+    </aside>
+  </div>
+  {% include "public/_footer.html" %}
+</main>
+{% endblock %}

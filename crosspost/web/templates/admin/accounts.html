@@ -1,0 +1,54 @@
+{% extends "admin_base.html" %}
+{% block page_title %}Social Accounts{% endblock %}
+{% block content %}
+<h1>Social accounts</h1>
+<section class="panel"><h2>Connected accounts</h2>
+  <div class="table-wrap"><table><tr><th>Account</th><th>Platform</th><th>Status</th><th>Token expires</th><th>Last check</th><th></th></tr>
+  {% for r in rows %}{% set a = r.account %}
+  <tr>
+    <td>{{ a.display_name }}<br><small>{{ r.spec.account_id_label }}: {{ a.external_account_id }}</small></td>
+    <td>{{ r.spec.display_name }}{% if a.platform not in enabled_platforms %}<br><small class="muted">platform disabled in Settings</small>{% endif %}</td>
+    <td><span class="badge {{ a.status }}">{{ a.status.replace('_', ' ') }}</span>{% if not a.enabled and a.status != 'disconnected' %} <span class="badge">paused</span>{% endif %}
+      {% if a.last_error %}<br><small>{{ a.last_error[:200] }}</small>{% endif %}
+      {% if r.missing %}<br><small class="muted">Missing permissions: {{ r.missing|join(', ') }}</small>{% endif %}</td>
+    <td><small>{{ a.token_expires_at|dt if a.token_expires_at else 'not reported' }}</small></td>
+    <td><small>{{ a.last_checked_at|dt }}</small></td>
+    <td>{% if user.role == 'admin' %}<div class="row">
+      <form class="inline" method="post" action="/admin/accounts/{{ a.id }}/check"><input type="hidden" name="csrf_token" value="{{ csrf_token }}"><button class="small secondary">Check</button></form>
+      {% if a.status != 'disconnected' %}<form class="inline" method="post" action="/admin/accounts/{{ a.id }}/toggle"><input type="hidden" name="csrf_token" value="{{ csrf_token }}"><button class="small secondary">{{ 'Pause' if a.enabled else 'Resume' }}</button></form>
+      <form class="inline" method="post" action="/admin/accounts/{{ a.id }}/disconnect"><input type="hidden" name="csrf_token" value="{{ csrf_token }}"><button class="small danger">Disconnect</button></form>{% endif %}
+    </div>{% endif %}</td>
+  </tr>
+  {% else %}<tr><td colspan="6" class="muted">No accounts connected.</td></tr>{% endfor %}</table></div>
+</section>
+<h2>Supported platforms</h2>
+<div class="grid two">
+{% for c in catalog %}{% set s = c.spec %}
+  <section class="panel">
+    <div class="row spread"><h3>{{ s.display_name }}</h3><span class="badge {{ 'ok' if s.automated_publishing else 'warn' }}">{{ 'automated' if s.automated_publishing else 'manual workflow' }}</span></div>
+    <p><small><strong>Requirements:</strong> {{ s.account_requirements }}</small></p>
+    {% if s.required_scopes %}<p><small><strong>Permissions:</strong> {{ s.required_scopes|join(', ') }}</small></p>{% endif %}
+    <p><small><strong>Format:</strong> up to {{ s.max_text }} characters, {{ s.max_photos }} photo(s){% if s.min_photos %}, at least {{ s.min_photos }} required{% endif %}{% if not s.link_clickable %}; links not clickable{% endif %}.</small></p>
+    {% if s.limitations %}<p><small><strong>Limitations:</strong> {{ s.limitations }}</small></p>{% endif %}
+    {% if user.role == 'admin' %}
+      {% if s.oauth %}
+        {% if c.oauth_ready %}
+        <form method="post" action="/admin/oauth/{{ s.platform }}/start"><input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+          <label for="oa-id-{{ s.platform }}">{{ s.account_id_label }}</label><input id="oa-id-{{ s.platform }}" type="text" name="external_account_id" required>
+          <label for="oa-name-{{ s.platform }}">Display name</label><input id="oa-name-{{ s.platform }}" type="text" name="display_name" required>
+          <p><button class="small">Connect with {{ s.display_name }}</button></p></form>
+        {% else %}<p class="notice"><small>OAuth app credentials for {{ s.display_name }} are not configured in the environment. See README → Social platform setup.</small></p>{% endif %}
+      {% endif %}
+      <details><summary>{{ 'Connect manually' if s.oauth else 'Add destination' }}</summary>
+        <form method="post" action="/admin/accounts/connect"><input type="hidden" name="csrf_token" value="{{ csrf_token }}"><input type="hidden" name="platform" value="{{ s.platform }}">
+          <label for="m-id-{{ s.platform }}">{{ s.account_id_label }}</label><input id="m-id-{{ s.platform }}" type="text" name="external_account_id" required>
+          <label for="m-name-{{ s.platform }}">Display name</label><input id="m-name-{{ s.platform }}" type="text" name="display_name" required>
+          {% if s.platform == 'webhook' %}<label for="m-url">Webhook URL (https)</label><input id="m-url" type="url" name="webhook_url" placeholder="defaults to SOCIAL_WEBHOOK_URL"><label for="m-sec">Signing secret (optional)</label><input id="m-sec" type="password" name="access_token" autocomplete="off">
+          {% elif s.platform != 'manual' %}<label for="m-tok-{{ s.platform }}">Access token</label><input id="m-tok-{{ s.platform }}" type="password" name="access_token" autocomplete="off"><p class="muted"><small>Stored encrypted. Never paste tokens into posts, chat, or tickets.</small></p>{% endif %}
+          <p><button class="small secondary">Save</button></p></form>
+      </details>
+    {% endif %}
+  </section>
+{% endfor %}
+</div>
+{% endblock %}

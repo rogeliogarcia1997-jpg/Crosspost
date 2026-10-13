@@ -1,0 +1,30 @@
+{% extends "admin_base.html" %}
+{% block page_title %}Analytics{% endblock %}
+{% block content %}
+<div class="row spread"><h1>Analytics</h1>
+  <form method="get" class="row"><label for="days" class="inline">Period</label><select id="days" name="days">{% for d in (7, 30, 90, 365) %}<option value="{{ d }}" {{ 'selected' if d == days }}>Last {{ d }} days</option>{% endfor %}</select><button class="small">Apply</button></form></div>
+<div class="grid cards">
+  <div class="panel stat"><div class="value">{{ stats.published_posts }}</div><div class="label">Posts published</div></div>
+  <div class="panel stat"><div class="value">{{ stats.clicks }}</div><div class="label">Tracked link clicks</div></div>
+  <div class="panel stat"><div class="value">{{ stats.visits }}</div><div class="label">Landing page visits</div></div>
+  <div class="panel stat"><div class="value">{{ stats.leads }}</div><div class="label">Leads</div></div>
+  <div class="panel stat"><div class="value">{{ stats.qualified_leads }}</div><div class="label">Qualified leads</div></div>
+  <div class="panel stat"><div class="value">{{ '%.1f%%'|format(stats.conversion_rate) if stats.conversion_rate is not none else '—' }}</div><div class="label">Visit → lead</div></div>
+</div>
+<section class="panel"><h2>Platform comparison</h2>
+  <div class="table-wrap"><table><tr><th>Platform</th><th class="num">Posts</th><th class="num">Failed</th><th class="num">Clicks</th><th class="num">Visits</th><th class="num">Leads</th><th class="num">Qualified</th><th class="num">Visit→lead</th><th class="num">Click→lead</th><th>Impressions</th></tr>
+  {% for r in platforms %}<tr><td>{{ r.platform }}</td><td class="num">{{ r.posts_published }}</td><td class="num">{{ r.posts_failed }}</td><td class="num">{{ r.clicks }}</td><td class="num">{{ r.visits }}</td><td class="num">{{ r.leads }}</td><td class="num">{{ r.qualified }}</td>
+    <td class="num">{{ '%.1f%%'|format(r.conversion_rate) if r.conversion_rate is not none else '—' }}</td><td class="num">{{ '%.1f%%'|format(r.click_to_lead_rate) if r.click_to_lead_rate is not none else '—' }}</td><td class="muted">not available</td></tr>
+  {% else %}<tr><td colspan="10" class="muted">No data yet.</td></tr>{% endfor %}</table></div>
+  <p class="muted"><small><strong>Measured</strong>: clicks on tracked links (our redirect, bots excluded), landing page visits, leads, qualified leads (set by your team). <strong>Not available</strong>: impressions and engagement. {{ unavailable.impressions }} "direct" means no tracking parameters were present.</small></p>
+</section>
+<section class="panel"><h2>Strongest lead sources</h2>
+  {% if strongest %}<ol>{% for r in strongest %}<li><strong>{{ r.platform }}</strong>: {{ r.leads }} lead(s), {{ r.qualified }} qualified{% if r.conversion_rate is not none %}, {{ '%.1f'|format(r.conversion_rate) }}% of visits{% endif %}</li>{% endfor %}</ol>{% else %}<p class="muted">No leads in this period.</p>{% endif %}
+</section>
+<section class="panel"><h2>Listing campaign results</h2>
+  <div class="table-wrap"><table><tr><th>Listing</th><th>Status</th><th>Campaign</th><th class="num">Posts</th><th class="num">Clicks</th><th class="num">Visits</th><th class="num">Leads</th><th class="num">Qualified</th><th class="num">Conv.</th></tr>
+  {% for r in listings %}<tr><td><a href="/admin/listings/{{ r.listing_id }}">{{ r.mls_id }}</a><br><small>{{ r.address }}</small></td><td>{{ r.status }}</td><td>{{ r.campaign_status or '—' }}</td><td class="num">{{ r.posts_published }}</td><td class="num">{{ r.clicks }}</td><td class="num">{{ r.visits }}</td><td class="num">{{ r.leads }}</td><td class="num">{{ r.qualified }}</td><td class="num">{{ '%.1f%%'|format(r.conversion_rate) if r.conversion_rate is not none else '—' }}</td></tr>
+  {% else %}<tr><td colspan="9" class="muted">No listings.</td></tr>{% endfor %}</table></div>
+  <p class="muted"><small>Listing-level figures are all-time.</small></p>
+</section>
+{% endblock %}

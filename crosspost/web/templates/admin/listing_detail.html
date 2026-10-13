@@ -1,0 +1,61 @@
+{% extends "admin_base.html" %}
+{% set l = listing %}
+{% block page_title %}MLS# {{ l.mls_id }}{% endblock %}
+{% block content %}
+<p><a href="/admin/listings">← Listings</a></p>
+<div class="row spread"><h1>{{ l.display_address }}</h1><span class="badge {{ 'active' if l.is_available else 'ended' }}">{{ l.status }}</span></div>
+{% if not auth.authorized %}<div class="notice">Not authorized for marketing: {{ auth.reason }}</div>{% endif %}
+{% if not l.is_available %}<div class="notice bad">This listing is not available ({{ l.status }}). Promotional posts are blocked.</div>{% endif %}
+<div class="grid two">
+  <section class="panel"><h2>Listing details</h2>
+    <table>
+      <tr><th>MLS#</th><td>{{ l.mls_id }} <small class="muted">({{ l.provider }})</small></td></tr>
+      <tr><th>Price</th><td>{{ l.price|money }}{% if l.original_price and l.original_price != l.price %} <small class="muted">(original {{ l.original_price|money }})</small>{% endif %}</td></tr>
+      <tr><th>Type</th><td>{{ l.property_subtype or l.property_type or '—' }}</td></tr>
+      <tr><th>Beds / baths</th><td>{{ l.bedrooms if l.bedrooms is not none else '—' }} / {{ l.bathrooms_total if l.bathrooms_total is not none else '—' }}</td></tr>
+      <tr><th>Living area</th><td>{{ "{:,}".format(l.living_area_sqft) ~ ' sq ft' if l.living_area_sqft else '—' }}</td></tr>
+      <tr><th>Lot</th><td>{{ l.lot_size_acres ~ ' ac' if l.lot_size_acres else ('{:,} sq ft'.format(l.lot_size_sqft) if l.lot_size_sqft else '—') }}</td></tr>
+      <tr><th>Listing agent</th><td>{{ l.list_agent_name or '—' }} · {{ l.list_office_name or '—' }} ({{ l.list_office_id or '—' }})</td></tr>
+      <tr><th>Internet display</th><td>{{ 'Allowed' if l.internet_display_allowed else 'Not allowed' }} · address {{ 'shown' if l.address_display_allowed else 'withheld' }}</td></tr>
+      <tr><th>Photos</th><td>{{ l.authorized_photos|length }} authorized of {{ (l.photos or [])|length }}</td></tr>
+      <tr><th>MLS modified</th><td>{{ l.mls_modified_at|dt }}</td></tr>
+      <tr><th>Last synced</th><td>{{ l.last_synced_at|dt }}</td></tr>
+      <tr><th>Landing page</th><td>{% if auth.authorized and l.internet_display_allowed %}<a href="/p/{{ l.slug }}" target="_blank" rel="noopener">/p/{{ l.slug }}</a>{% else %}—{% endif %}</td></tr>
+      <tr><th>Leads</th><td>{% if user.role != 'viewer' %}<a href="/admin/leads?listing={{ l.id }}">{{ lead_count }}</a>{% else %}{{ lead_count }}{% endif %}</td></tr>
+      <tr><th>Campaign</th><td>{% if l.campaign %}{{ l.campaign.code }} <span class="badge {{ l.campaign.status }}">{{ l.campaign.status }}</span>{% if l.campaign.end_reason %} <small>{{ l.campaign.end_reason }}</small>{% endif %}{% else %}—{% endif %}</td></tr>
+    </table>
+    {% if l.authorized_photos %}<div class="thumbs">{% for p in l.authorized_photos[:6] %}<img src="{{ p.url }}" alt="{{ p.caption or 'Listing photo' }}">{% endfor %}</div>{% endif %}
+  </section>
+  <section class="panel stack"><h2>Actions</h2>
+    {% if user.role != 'viewer' %}
+    <form method="post" action="/admin/listings/{{ l.id }}/sync"><input type="hidden" name="csrf_token" value="{{ csrf_token }}"><button class="secondary">Refresh from MLS</button></form>
+    <form method="post" action="/admin/listings/{{ l.id }}/publish">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+      <h3>Generate posts for selected accounts</h3>
+      {% for a in accounts %}<label class="inline"><input type="checkbox" name="account_ids" value="{{ a.id }}" {{ 'checked' if a.platform in rules.enabled_platforms }}> {{ a.display_name }} <span class="badge">{{ a.platform }}</span>{% if a.status != 'connected' %} <span class="badge {{ a.status }}">{{ a.status }}</span>{% endif %}</label>
+      {% else %}<p class="muted">No social accounts connected. <a href="/admin/accounts">Connect one</a>.</p>{% endfor %}
+      {% if accounts %}<p><button {{ 'disabled' if not (auth.authorized and l.is_available) }}>Generate posts</button></p><p class="muted"><small>Posts follow the configured approval rules. Content uses MLS data only.</small></p>{% endif %}
+    </form>
+    {% endif %}
+    {% if user.role == 'admin' %}
+    <form method="post" action="/admin/listings/{{ l.id }}/marketing">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+      <h3>Marketing authorization override</h3>
+      <select name="decision"><option value="rules" {{ 'selected' if l.marketing_override is none }}>Follow configured rules</option><option value="allow" {{ 'selected' if l.marketing_override is true }}>Authorized (listing broker permission on file)</option><option value="block" {{ 'selected' if l.marketing_override is false }}>Do not market</option></select>
+      <p><button class="secondary small">Save</button></p>
+    </form>
+    {% endif %}
+  </section>
+</div>
+<section class="panel"><h2>Campaign posts</h2>
+  <div class="table-wrap"><table><tr><th>Post</th><th>Platform</th><th>Listing</th><th>Status</th><th>When</th></tr>
+  {% for p in posts %}{% include "admin/_post_row.html" %}{% else %}<tr><td colspan="5" class="muted">No posts yet.</td></tr>{% endfor %}</table></div>
+</section>
+<section class="panel"><h2>Generated content preview</h2>
+  {% for p in posts[:6] %}<h3>{{ p.platform }} · {{ p.kind.replace('_', ' ') }} <span class="badge {{ p.status }}">{{ p.status }}</span></h3><pre class="post">{{ p.title ~ '\n\n' if p.title }}{{ p.text }}</pre>{% for w in p.warnings %}<div class="notice">{{ w }}</div>{% endfor %}
+  {% else %}<p class="muted">No generated content yet.</p>{% endfor %}
+</section>
+<section class="panel"><h2>Synchronization history</h2>
+  <ul class="plain">{% for c in changes %}<li><span class="badge">{{ c.change_type.replace('_', ' ') }}</span> {{ c.detected_at|dt }}{% if c.change_type in ('price_change', 'status_change') %} — {{ c.old_value }} → {{ c.new_value }}{% elif c.change_type == 'details_changed' %} — {{ c.new_value|join(', ') }}{% endif %}</li>{% endfor %}</ul>
+</section>
+{% endblock %}
