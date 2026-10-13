@@ -91,6 +91,10 @@ def create_app() -> FastAPI:
     app.include_router(admin.router)
     app.include_router(oauth.router)
 
+    @app.get("/favicon.ico", include_in_schema=False)
+    async def favicon():
+        return RedirectResponse("/static/favicon.svg", status_code=301)
+
     @app.get("/", response_class=HTMLResponse, include_in_schema=False)
     async def root():
         return RedirectResponse("/listings", status_code=302)

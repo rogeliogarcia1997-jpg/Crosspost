@@ -15,7 +15,8 @@ FEED = json.loads((ROOT / "data" / "mock_mls_feed.json").read_text())["value"]
 def app_env(tmp_path, monkeypatch):
     env = {
         "APP_ENV": "test",
-        "DATABASE_URL": f"sqlite:///{tmp_path}/test.db",
+        # Set TEST_DATABASE_URL (e.g. a disposable PostgreSQL database) to run against another engine.
+        "DATABASE_URL": os.environ.get("TEST_DATABASE_URL") or f"sqlite:///{tmp_path}/test.db",
         "SECRET_KEY": "test-secret-key-that-is-long-enough-1234567890",
         "PUBLIC_BASE_URL": "https://homes.example.com",
         "BROKERAGE_OFFICE_IDS": "OFF100",
@@ -41,6 +42,7 @@ def app_env(tmp_path, monkeypatch):
     from crosspost import models  # noqa: F401
 
     engine = dbmod.init_engine(env["DATABASE_URL"])
+    Base.metadata.drop_all(engine)
     Base.metadata.create_all(engine)
 
     from crosspost.social import test_adapter

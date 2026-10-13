@@ -50,7 +50,7 @@ def healthz(db: Session = Depends(get_db)):
     return JSONResponse({"status": "ok"})
 
 
-@router.get("/t/{code}")
+@router.api_route("/t/{code}", methods=["GET", "HEAD"])
 def tracked_redirect(code: str, request: Request, db: Session = Depends(get_db)):
     link = db.scalar(select(TrackingLink).where(TrackingLink.code == code[:32]))
     if link is None:
@@ -62,7 +62,7 @@ def tracked_redirect(code: str, request: Request, db: Session = Depends(get_db))
     return RedirectResponse(destination_url(link, listing), status_code=302)
 
 
-@router.get("/listings")
+@router.api_route("/listings", methods=["GET", "HEAD"])
 def listing_index(request: Request, db: Session = Depends(get_db)):
     """Public index of currently marketed listings (usable as an Instagram link-in-bio page)."""
     listings = [
@@ -90,7 +90,7 @@ def _landing_context(request: Request, listing: Listing, attribution: dict, erro
     }
 
 
-@router.get("/p/{slug}")
+@router.api_route("/p/{slug}", methods=["GET", "HEAD"])
 def landing_page(slug: str, request: Request, db: Session = Depends(get_db)):
     listing = _public_listing(db, slug)
     params = request.query_params
@@ -172,6 +172,6 @@ def thanks(slug: str, request: Request, db: Session = Depends(get_db)):
     return render(request, "public/thanks.html", {"listing": listing})
 
 
-@router.get("/privacy")
+@router.api_route("/privacy", methods=["GET", "HEAD"])
 def privacy(request: Request):
     return render(request, "public/privacy.html", {"consent_version": CONSENT_TEXT_VERSION})
