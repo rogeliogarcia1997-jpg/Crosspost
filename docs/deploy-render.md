@@ -8,7 +8,7 @@
 | `crosspost-worker` | Background worker (Docker) | Job queue and scheduler: MLS sync, publishing, retries, notifications, CRM delivery. |
 | `crosspost-db` | PostgreSQL | All application data. |
 
-Both services build from the repository's `Dockerfile` and deploy automatically on pushes to `main`. Workers and pre-deploy commands need paid instance types; check Render's current pricing for the `starter` and `basic-256mb` plans used here.
+Both services build from the repository's `Dockerfile` and deploy automatically on pushes to `main`. `render.yaml` doesn't set compute or database plans, so Render applies its defaults; you confirm or change them after creation (step 3). Workers and pre-deploy commands need paid plans.
 
 ## 1. Prerequisites
 
@@ -36,7 +36,14 @@ Both services build from the repository's `Dockerfile` and deploy automatically 
 
 > **Do not regenerate `TOKEN_ENCRYPTION_KEY`** once social accounts are connected: their stored tokens can no longer be decrypted and every account must be reconnected.
 
-## 3. Create the first admin user
+## 3. Choose plans
+
+`render.yaml` deliberately doesn't name plans, because Render renames its plan catalog over time. After the Blueprint is created:
+
+1. Open **crosspost-db → Settings** and check its plan. **If it says Free, upgrade it to a paid plan:** free Render databases expire.
+2. Open **crosspost-web** and **crosspost-worker → Settings** and confirm their compute plans. The smallest paid plan is enough to start.
+
+## 4. Create the first admin user
 
 Open the web service's **Shell** tab in Render and run:
 
@@ -47,14 +54,14 @@ python -m crosspost.cli check-config
 
 `create-user` prompts for a password (12+ characters, mixed case). Then sign in at `PUBLIC_BASE_URL/login`.
 
-## 4. Add your domain (optional)
+## 5. Add your domain (optional)
 
 1. In the web service's **Settings → Custom Domains**, add your domain and create the DNS record Render shows. Render issues the TLS certificate.
 2. Update `PUBLIC_BASE_URL` on the web service to the new `https://` address. The worker picks it up automatically on its next deploy; trigger one with **Manual Deploy** so new posts use the new address.
 
 Links already published keep working only while the old hostname still reaches the service, so settle the domain before you start publishing.
 
-## 5. Optional integrations
+## 6. Optional integrations
 
 Add these to the **`crosspost-settings`** environment group (Dashboard → Env Groups) so both services receive them:
 
@@ -94,6 +101,6 @@ Only use this for a private trial. Development mode relaxes the production safet
 
 `render.yaml` follows Render's documented Blueprint format, but it was written without access to Render's schema validator. If Render rejects a field when you apply the Blueprint, check:
 
-- **Plan names:** `starter` for services and `basic-256mb` for Postgres. Render renames plans from time to time.
+- **Plans:** none are set, so Render's defaults apply. If Render still reports a plan error, it's coming from a default your workspace can't use. Pick the plan in the dashboard instead.
 - **`preDeployCommand`:** requires a paid instance type.
 - **`fromService` references:** used by the worker to read the web service's variables.

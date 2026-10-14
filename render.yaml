@@ -9,7 +9,8 @@ databases:
   - name: crosspost-db
     databaseName: crosspost
     user: crosspost
-    plan: basic-256mb        # change to a larger plan as needed
+    # No `plan`: Render applies its default. Confirm the plan in the dashboard after creation
+    # (docs/deploy-render.md, "Choose plans"); a free database expires.
     # region: oregon         # keep all three resources in the same region
 
 envVarGroups:
@@ -38,8 +39,6 @@ envVarGroups:
         value: own_office
       - key: PUBLISH_MODE_NEW_LISTING
         value: manual_approval
-      - key: ENABLED_PLATFORMS
-        value: ""                   # choose platforms in the dashboard under Settings
       - key: EMAIL_BACKEND
         value: smtp
       - key: SMTP_PORT
@@ -49,8 +48,7 @@ services:
   - type: web
     name: crosspost-web
     runtime: docker
-    plan: starter
-    branch: main
+    branch: main               # no `plan`: Render's default compute plan; change it in the dashboard
     dockerfilePath: ./Dockerfile
     healthCheckPath: /healthz
     preDeployCommand: python -m crosspost.cli migrate
@@ -90,8 +88,7 @@ services:
   - type: worker
     name: crosspost-worker
     runtime: docker
-    plan: starter
-    branch: main
+    branch: main               # no `plan`: Render's default compute plan; change it in the dashboard
     dockerfilePath: ./Dockerfile
     dockerCommand: python -m crosspost.cli worker
     envVars:

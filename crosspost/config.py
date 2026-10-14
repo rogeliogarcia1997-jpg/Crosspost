@@ -75,7 +75,7 @@ class Settings(BaseSettings):
     announce_status_changes: bool = False
     repost_interval_days: int = 0  # 0 disables reposting
     delete_posts_on_unavailable: bool = False
-    enabled_platforms: str = "test"
+    enabled_platforms: str = ""  # none until chosen; development uses ENABLED_PLATFORMS=test
 
     # --- Leads / privacy --------------------------------------------------
     lead_notification_emails: str = ""
